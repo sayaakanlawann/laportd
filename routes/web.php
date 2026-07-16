@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
+use App\Http\Controllers\EvidenceController;
+
 
 Route::get('/', function () {
     return view('welcome');
@@ -67,3 +69,18 @@ Route::get('/debug-upload', function () {
         return "ERROR GOOGLE LANGSUNG: " . $e->getMessage();
     }
 });
+
+// Rute untuk menampilkan form upload
+Route::get('/upload', [EvidenceController::class, 'create']);
+
+// Rute untuk menerima data saat tombol upload ditekan
+Route::post('/upload', [EvidenceController::class, 'store']);
+
+// Rute untuk melihat daftar dokumen
+Route::get('/evidence', [EvidenceController::class, 'index']);
+
+// Rute untuk menghapus dokumen
+Route::delete('/evidence/{id}', [EvidenceController::class, 'destroy']);
+
+// Rute untuk mendownload dokumen
+Route::get('/evidence/{id}/download', [EvidenceController::class, 'download']);
