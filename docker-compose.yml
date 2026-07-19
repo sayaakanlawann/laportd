@@ -27,6 +27,40 @@ services:
     networks:
       - tvri_network
 
+  mysql:
+      image: mysql:8.0
+      container_name: tvri_mysql
+      restart: unless-stopped
+      ports:
+        - "3307:3306"
+      environment:
+        MYSQL_ROOT_PASSWORD: root
+        MYSQL_DATABASE: tvri_laporan
+      volumes:
+        - mysql_data:/var/lib/mysql
+      networks:
+        - tvri_network # Sesuaikan dengan nama network di docker-compose kamu (misal: app-network)
+
+  # 2. Mesin phpMyAdmin (Biar gampang lihat isi database)
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: tvri_phpmyadmin
+    restart: unless-stopped
+    ports:
+      - "8080:80" # Akses phpMyAdmin di localhost:8080
+    environment:
+      PMA_HOST: mysql
+      MYSQL_ROOT_PASSWORD: root
+    networks:
+      - tvri_network # Sesuaikan dengan nama network di docker-compose kamu
+      
+# Tambahkan ini di paling bawah file jika belum ada
+
 networks:
   tvri_network:
     driver: bridge
+
+volumes:
+  mysql_data:
+
+

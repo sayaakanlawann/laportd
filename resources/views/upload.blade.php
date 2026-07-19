@@ -36,18 +36,33 @@
                             <label class="form-label">Tanggal Tugas</label>
                             <input type="date" name="tanggal_tugas" class="form-control" required>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Nama TD (Technical Director)</label>
-                            <input type="text" name="nama_petugas" class="form-control" placeholder="Masukkan nama..." required>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Petugas PDU</label>
-                            <input type="text" name="pdu_nama" class="form-control" required>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Petugas Transmisi</label>
-                            <input type="text" name="tx_petugas_nama" class="form-control" required>
-                        </div>
+                        <label class="form-label text-muted small">Nama Petugas (TD)</label>
+                        <select name="nama_petugas" class="form-select bg-dark text-white border-secondary" required>
+                            <option value="">-- Pilih TD --</option>
+                            <!-- Ubah $petugas menjadi $td -->
+                            @foreach($td as $p)
+                                <option value="{{ $p->nama }}">{{ $p->nama }}</option>
+                            @endforeach
+                        </select>
+
+                        <!-- Lakukan hal yang sama untuk PDU -->
+                        <label class="form-label text-muted small">Petugas PDU</label>
+                        <select name="pdu_nama" class="form-select bg-dark text-white border-secondary" required>
+                            <option value="">-- Pilih PDU --</option>
+                            <!-- Ubah $petugas menjadi $pdu -->
+                            @foreach($pdu as $p)
+                                <option value="{{ $p->nama }}">{{ $p->nama }}</option>
+                            @endforeach
+                        </select>
+
+                        <label class="form-label text-muted small">Petugas TX</label>
+                        <select name="tx_petugas_nama" class="form-select bg-dark text-white border-secondary" required>
+                            <option value="">-- Pilih TX --</option>
+                            <!-- Ubah $petugas menjadi $tx -->
+                            @foreach($tx as $p)
+                                <option value="{{ $p->nama }}">{{ $p->nama }}</option>
+                            @endforeach
+                        </select>
                         <div class="col-md-12 mb-3">
                             <label class="form-label">Kehadiran Kru</label>
                             <select name="kru_lengkap" class="form-select" required>
@@ -99,7 +114,81 @@
                             </div>
                         </div>
                     </div>
+                    <!-- ========================================== -->
+            <!-- BLOK REPEATER: DAFTAR JAM TAYANG SIARAN    -->
+            <!-- ========================================== -->
+            <div class="mb-5">
+                <div class="d-flex justify-content-between align-items-end mb-3">
+                    <div>
+                        <h5 class="text-white mb-0">⏰ Log Jam Tayang Siaran</h5>
+                        <small class="text-muted">Tambahkan semua program acara selama shift bertugas.</small>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-info fw-bold" id="btn-tambah-siaran">
+                        + Tambah Program
+                    </button>
+                </div>
 
+                <!-- Wadah Penampung Form Dinamis -->
+                <div id="siaran-container">
+                    
+                    <!-- Baris Form ke-1 (Default, tidak bisa dihapus) -->
+                    <div class="siaran-item bg-secondary bg-opacity-10 border border-secondary border-opacity-25 p-3 rounded mb-3">
+                        <div class="row g-3 pe-4">
+    <!-- 1. Rentang Waktu (2 Kolom) -->
+                            <!-- Waktu Siaran -->
+    <div class="col-md-2">
+        <label class="form-label text-muted small">Waktu Siaran</label>
+        <select name="waktu_siaran[]" class="form-select bg-dark text-white border-secondary waktu-selector" onchange="gantiPilihanProgram(this)" required>
+            <option value="">-- Pilih --</option>
+            <option value="15:00|15:59">15:00 - 15:59</option>
+            <option value="16:00|16:59">16:00 - 16:59</option>
+            <option value="17:00|17:59">17:00 - 17:59</option>
+            <option value="18:00|18:59">18:00 - 18:59</option>
+        </select>
+    </div>
+    
+    <!-- Nama Program -->
+    <div class="col-md-3">
+        <label class="form-label text-muted small">Nama Program</label>
+        <select name="nama_program[]" class="form-select bg-dark text-white border-secondary program-selector" onchange="cekCustomProgram(this)" required>
+            <option value="">-- Pilih Jam Dulu --</option>
+        </select>
+        <!-- Input rahasia untuk "Other" -->
+        <input type="text" name="nama_program_custom[]" class="form-control form-control-sm bg-dark text-white border-warning mt-2 custom-program" style="display: none;" placeholder="Ketik nama acara baru...">
+    </div>
+                            <!-- 3. Jenis Acara (2 Kolom) -->
+                            <div class="col-md-3">
+                                <label class="form-label text-muted small">Jenis Acara</label>
+                                <select name="jenis_acara[]" class="form-select bg-dark text-white border-secondary" required>
+                                    <option value="">-- Pilih --</option>
+                                    <option value="Live Studio 1">Live Studio 1</option>
+                                    <option value="Live Studio 2">Live Studio 2</option>
+                                    <option value="Live Studio 3">Live Studio 3</option>
+                                    <option value="Relay">Relay</option>
+                                    <option value="Record">Record</option>
+                                    <option value="Playback">Playback</option>
+                                </select>
+                            </div>
+
+                            <!-- 4. Status & Kendala (4 Kolom) -->
+                            <div class="col-md-4">
+                                <label class="form-label text-muted small">Status & Kendala</label>
+                                <div class="input-group">
+                                    <select name="status_siaran[]" class="form-select bg-dark text-white border-secondary" style="max-width: 120px;" required>
+                                        <option value="Aman">Aman</option>
+                                        <option value="Audio">Audio</option>
+                                        <option value="Video">Video</option>
+                                    </select>
+                                    <input type="text" name="catatan_kendala[]" class="form-control bg-dark text-white border-secondary" placeholder="Catatan kendala (Opsional)">
+                                </div>
+                            </div>
+                        </div>
+                                            </div>
+                    <!-- Akhir Baris ke-1 -->
+
+                </div>
+            </div>
+            <!-- ========================================== -->
                     <div class="section-title">Finalisasi</div>
                     <div class="row mb-4">
                         <div class="col-md-12 mb-3">
@@ -107,6 +196,8 @@
                             <textarea name="kesimpulan" class="form-control" rows="4" required placeholder="Tuliskan kesimpulan siaran sore ini..."></textarea>
                         </div>
                     </div>
+
+                    
 
                     <div class="text-end">
                         <button type="submit" class="btn btn-primary">Simpan Laporan Utama</button>
@@ -117,7 +208,7 @@
     </div>
 
     <script>
-        // Logika Conditional Rendering sesuai Master Blueprint
+        // Logika Conditional Rendering Kendala Pra-Siaran
         function toggleKendala() {
             var selectBox = document.getElementById("pra_kendala_select");
             var kendalaArea = document.getElementById("kendala_area");
@@ -126,6 +217,125 @@
                 kendalaArea.style.display = "block";
             } else {
                 kendalaArea.style.display = "none";
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const container = document.getElementById('siaran-container');
+            const btnTambah = document.getElementById('btn-tambah-siaran');
+
+            // Template HTML untuk baris baru (SUDAH BERSIH DARI $programs)
+            const templateSiaran = `
+                <div class="siaran-item bg-secondary bg-opacity-10 border border-secondary border-opacity-25 p-3 rounded mb-3 position-relative">
+                    <!-- Tombol Hapus (X) -->
+                    <button type="button" class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 mt-2 me-2 btn-hapus-siaran" style="padding: 2px 8px;" title="Hapus Baris">✕</button>
+                    
+                    <div class="row g-3 pe-4">
+                        <!-- 1. Rentang Waktu (2 Kolom) -->
+                        <div class="col-md-2">
+                            <label class="form-label text-muted small">Waktu Siaran</label>
+                            <select name="waktu_siaran[]" class="form-select bg-dark text-white border-secondary waktu-selector" onchange="gantiPilihanProgram(this)" required>
+                                <option value="">-- Pilih --</option>
+                                <option value="15:00|15:59">15:00 - 15:59</option>
+                                <option value="16:00|16:59">16:00 - 16:59</option>
+                                <option value="17:00|17:59">17:00 - 17:59</option>
+                                <option value="18:00|18:59">18:00 - 18:59</option>
+                            </select>
+                        </div>
+                        
+                        <!-- 2. Nama Program (3 Kolom) -->
+                        <div class="col-md-3">
+                            <label class="form-label text-muted small">Nama Program</label>
+                            <select name="nama_program[]" class="form-select bg-dark text-white border-secondary program-selector" onchange="cekCustomProgram(this)" required>
+                                <option value="">-- Pilih Jam Dulu --</option>
+                            </select>
+                            <!-- Input rahasia untuk "Other" -->
+                            <input type="text" name="nama_program_custom[]" class="form-control form-control-sm bg-dark text-white border-warning mt-2 custom-program" style="display: none;" placeholder="Ketik nama acara baru...">
+                        </div>
+
+                        <!-- 3. Jenis Acara (2 Kolom) -->
+                        <div class="col-md-3">
+                            <label class="form-label text-muted small">Jenis Acara</label>
+                            <select name="jenis_acara[]" class="form-select bg-dark text-white border-secondary" required>
+                                <option value="">-- Pilih --</option>
+                                <option value="Live Studio 1">Live Studio 1</option>
+                                <option value="Live Studio 2">Live Studio 2</option>
+                                <option value="Live Studio 3">Live Studio 3</option>
+                                <option value="Relay">Relay</option>
+                                <option value="Record">Record</option>
+                                <option value="Playback">Playback</option>
+                            </select>
+                        </div>
+
+                        <!-- 4. Status & Kendala (4 Kolom) -->
+                        <div class="col-md-4">
+                            <label class="form-label text-muted small">Status & Kendala</label>
+                            <div class="input-group">
+                                <select name="status_siaran[]" class="form-select bg-dark text-white border-secondary" style="max-width: 120px;" required>
+                                    <option value="Aman">Aman</option>
+                                    <option value="Audio">Audio</option>
+                                    <option value="Video">Video</option>
+                                </select>
+                                <input type="text" name="catatan_kendala[]" class="form-control bg-dark text-white border-secondary" placeholder="Catatan kendala (Opsional)">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Aksi ketika tombol "+ Tambah Program" diklik
+            btnTambah.addEventListener('click', function() {
+                container.insertAdjacentHTML('beforeend', templateSiaran);
+            });
+
+            // Aksi ketika tombol "✕" (Hapus) diklik
+            container.addEventListener('click', function(e) {
+                if(e.target.classList.contains('btn-hapus-siaran')) {
+                    e.target.closest('.siaran-item').remove();
+                }
+            });
+        });
+
+        // ----------------------------------------------------
+        // LOGIKA DYNAMIC DROPDOWN
+        // ----------------------------------------------------
+        const dataProgram = @json($programsGrouped);
+
+        function gantiPilihanProgram(selectWaktu) {
+            let row = selectWaktu.closest('.row'); 
+            let selectProgram = row.querySelector('.program-selector');
+            let inputCustom = row.querySelector('.custom-program');
+            let waktuTerpilih = selectWaktu.value;
+
+            // Reset dropdown program
+            selectProgram.innerHTML = '<option value="">-- Pilih Program --</option>';
+
+            // Masukkan data sesuai jam
+            if (waktuTerpilih && dataProgram[waktuTerpilih]) {
+                dataProgram[waktuTerpilih].forEach(prog => {
+                    selectProgram.innerHTML += `<option value="${prog.nama_program}">${prog.nama_program}</option>`;
+                });
+            }
+            
+            selectProgram.innerHTML += '<option value="Other">Lainnya (Ketik Manual)...</option>';
+
+            // Sembunyikan input custom
+            inputCustom.style.display = 'none';
+            inputCustom.value = '';
+            inputCustom.removeAttribute('required');
+        }
+
+        function cekCustomProgram(selectProgram) {
+            let row = selectProgram.closest('.row');
+            let inputCustom = row.querySelector('.custom-program');
+
+            if (selectProgram.value === 'Other') {
+                inputCustom.style.display = 'block';
+                inputCustom.setAttribute('required', 'required');
+            } else {
+                inputCustom.style.display = 'none';
+                inputCustom.value = '';
+                inputCustom.removeAttribute('required');
             }
         }
     </script>

@@ -22,4 +22,9 @@ class LaporanUtama extends Model
     protected $casts = [
         'evidence' => 'array', 
     ];
+    
+    public function siarans()
+    {
+        return $this->hasMany(LaporanSiaran::class);
+    }
 }

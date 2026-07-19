@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y \
     libzip-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install \
+        pdo_mysql\
         pdo_pgsql \
         mbstring \
         exif \
@@ -25,6 +26,8 @@ RUN apt-get update && apt-get install -y \
         gd \
         intl \
         zip
+
+        # Tambahkan pdo_mysql pada baris ini
 
 # 2. Mengambil Composer (Manajer paket untuk PHP)
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer

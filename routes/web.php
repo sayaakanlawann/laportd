@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\EvidenceController;
+use App\Http\Controllers\MasterDataController;
 
 
 Route::get('/', function () {
@@ -84,3 +85,14 @@ Route::delete('/evidence/{id}', [EvidenceController::class, 'destroy']);
 
 // Rute untuk mendownload dokumen
 Route::get('/evidence/{id}/download', [EvidenceController::class, 'download']);
+
+Route::get('/export-excel', [App\Http\Controllers\EvidenceController::class, 'exportExcel']);
+
+
+
+Route::get('/master-data', [MasterDataController::class, 'index']);
+Route::post('/master-data/update-petugas', [MasterDataController::class, 'updatePetugas']);
+
+Route::post('/master-data/update-program', [MasterDataController::class, 'updateProgram']);
+Route::post('/master-data/store-petugas', [MasterDataController::class, 'storePetugas']);
+Route::post('/master-data/store-program', [MasterDataController::class, 'storeProgram']);

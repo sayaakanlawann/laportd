@@ -4,83 +4,95 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\LaporanUtama;
-use Google\Client;
-use Google\Service\Drive;
-use Google\Service\Drive\DriveFile;
-use Barryvdh\DomPDF\Facade\Pdf; // Import mesin PDF
+use Illuminate\Support\Facades\Storage; // Mesin Penyimpanan Lokal
+use Barryvdh\DomPDF\Facade\Pdf;
+use App\Models\Petugas;
+use App\Models\ProgramSiaran;
+use App\Exports\LaporanExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class EvidenceController extends Controller
 {
-    public function create() { return view('upload'); }
+    public function create() 
+    {
+        $td = Petugas::where('is_aktif', true)->where('jabatan_utama', 'Technical Director')->orderBy('nama')->get();
+        $pdu = Petugas::where('is_aktif', true)->where('jabatan_utama', 'PDU')->orderBy('nama')->get();
+        $tx = Petugas::where('is_aktif', true)->where('jabatan_utama', 'Transmisi')->orderBy('nama')->get();
+        
+        // Ambil program dan kelompokkan berdasarkan jam_tayang_default
+        $programsGrouped = ProgramSiaran::where('is_aktif', true)
+                                ->orderBy('nama_program')
+                                ->get()
+                                ->groupBy('jam_tayang_default'); 
+        
+        // Bawa data tersebut ke halaman upload
+        return view('upload', compact('td', 'pdu', 'tx', 'programsGrouped'));
+    }
 
-    // MENYIMPAN DATA (DENGAN FIELD EVIDENCE GABUNGAN JSON)
+    // MENYIMPAN DATA KE LOCAL STORAGE
+    // MENYIMPAN DATA (LOKAL + REPEATER JAM SIARAN)
     public function store(Request $request)
     {
+        // 1. Validasi Data (Termasuk Array dari Form Repeater)
+        // 1. Validasi Data (Termasuk Array dari Form Repeater)
         $request->validate([
-            'tanggal_tugas'   => 'required|date',
-            'nama_petugas'    => 'required',
-            'pdu_nama'        => 'required',
-            'tx_petugas_nama' => 'required',
-            'pra_kendala'     => 'required',
-            'kru_lengkap'     => 'required',
-            'kesimpulan'      => 'required',
+            'tanggal_tugas'     => 'required|date',
+            'nama_petugas'      => 'required',
+            'pdu_nama'          => 'required',
+            'tx_petugas_nama'   => 'required',
+            'pra_kendala'       => 'required',
+            'kru_lengkap'       => 'required',
+            'kesimpulan'        => 'required',
+            
+            // Validasi Array Repeater
+            'waktu_siaran'      => 'required|array',
+            'waktu_siaran.*'    => 'required',
+            'jenis_acara'       => 'required|array',
+            'jenis_acara.*'     => 'required',
+            
+            // HAPUS jam_tayang DARI SINI KARENA SUDAH DIGANTI waktu_siaran
+            
+            'nama_program'      => 'required|array',
+            'nama_program.*'    => 'required',
+            'status_siaran'     => 'required|array',
+            'status_siaran.*'   => 'required',
+            'catatan_kendala'   => 'nullable|array',
+
+            // --- VALIDASI FILE MAX 10MB (10240 KB) ---
+            'ev_alat_studio'    => 'required|file|mimes:jpg,jpeg,png,pdf|max:10240',
+            'ev_jaringan'       => 'required|file|mimes:jpg,jpeg,png,pdf|max:10240',
+            'ev_jalur_av'       => 'required|file|mimes:jpg,jpeg,png,pdf|max:10240',
+            'pra_ev_kendala'    => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:10240',
         ]);
 
         try {
-            $client = new Client();
-            $client->setClientId(env('GOOGLE_CLIENT_ID'));
-            $client->setClientSecret(env('GOOGLE_CLIENT_SECRET'));
-            $client->refreshToken(env('GOOGLE_REFRESH_TOKEN'));
-            $service = new Drive($client);
-            $folderId = env('GOOGLE_DRIVE_FOLDER_ID');
+            $kumpulanEvidence = []; 
 
-            $kumpulanEvidence = []; // Array kosong untuk menampung semua evidence
-
-            // Helper function yang langsung menangkap ID dan membuat Link
-            // Helper function yang langsung menangkap ID dan membuat Link
-            $uploadKeDrive = function ($namaInputFile, $keterangan) use ($request, $service, $folderId, &$kumpulanEvidence) {
+            // Helper function untuk Upload Lokal (Tetap sama)
+            $uploadKeLokal = function ($namaInputFile, $keterangan) use ($request, &$kumpulanEvidence) {
                 if ($request->hasFile($namaInputFile)) {
                     $file = $request->file($namaInputFile);
                     $namaFile = time() . '_' . $namaInputFile . '_' . $file->getClientOriginalName();
                     
-                    $fileMetadata = new DriveFile(['name' => $namaFile, 'parents' => [$folderId]]);
-                    $content = file_get_contents($file->getRealPath());
+                    $path = $file->storeAs('evidence', $namaFile, 'public');
                     
-                    // 1. Eksekusi Upload
-                    $uploadResult = $service->files->create($fileMetadata, [
-                        'data' => $content, 'mimeType' => $file->getMimeType(),
-                        'uploadType' => 'multipart', 'fields' => 'id'
-                    ]);
-                    
-                    $fileId = $uploadResult->getId();
-
-                    // 2. --- TAMBAHAN KODE BARU (BUKA KUNCI KEAMANAN FILE) ---
-                    // Ubah izin file menjadi "Anyone with the link can view" agar thumbnail bisa dimuat
-                    $permission = new \Google\Service\Drive\Permission([
-                        'type' => 'anyone',
-                        'role' => 'reader'
-                    ]);
-                    $service->permissions->create($fileId, $permission);
-                    // --------------------------------------------------------
-                    
-                    // 3. Masukkan ke keranjang evidence
                     $kumpulanEvidence[] = [
                         'keterangan' => $keterangan,
                         'filename'   => $namaFile,
-                        'file_id'    => $fileId,
-                        'link_drive' => 'https://drive.google.com/file/d/' . $fileId . '/view'
+                        'file_id'    => $path,
+                        'link_drive' => asset('storage/' . $path)
                     ];
                 }
             };
 
-            // Jalankan upload satu per satu beserta keterangannya
-            $uploadKeDrive('ev_alat_studio', 'Alat Studio & Master');
-            $uploadKeDrive('ev_jaringan', 'Pengecekan Jaringan');
-            $uploadKeDrive('ev_jalur_av', 'Jalur Audio & Video');
-            $uploadKeDrive('pra_ev_kendala', 'Evidence Kendala (Pra-Siaran)');
+            // Jalankan upload lokal satu per satu
+            $uploadKeLokal('ev_alat_studio', 'Alat Studio & Master');
+            $uploadKeLokal('ev_jaringan', 'Pengecekan Jaringan');
+            $uploadKeLokal('ev_jalur_av', 'Jalur Audio & Video');
+            $uploadKeLokal('pra_ev_kendala', 'Evidence Kendala (Pra-Siaran)');
 
-            // Simpan ke database
-            LaporanUtama::create([
+            // 2. Simpan Data Induk dan tampung di dalam variabel $laporanUtama
+            $laporanUtama = LaporanUtama::create([
                 'tanggal_tugas'   => $request->tanggal_tugas,
                 'nama_petugas'    => $request->nama_petugas,
                 'pdu_nama'        => $request->pdu_nama,
@@ -89,10 +101,33 @@ class EvidenceController extends Controller
                 'pra_ket_kendala' => $request->pra_ket_kendala,
                 'kru_lengkap'     => $request->kru_lengkap,
                 'kesimpulan'      => $request->kesimpulan,
-                'evidence'        => $kumpulanEvidence, // Disimpan sebagai 1 paket JSON
+                'evidence'        => $kumpulanEvidence, 
             ]);
 
-            return back()->with('success', 'HORE! Laporan Induk berhasil disimpan dalam format baru!');
+            // 3. Simpan Data Anak (Jam Siaran) menggunakan Relasi Eloquent
+            $dataSiaran = [];
+            foreach ($request->waktu_siaran as $index => $waktu) {
+                $namaAcara = $request->nama_program[$index];
+            if ($namaAcara === 'Other') {
+                $namaAcara = $request->nama_program_custom[$index];
+            }
+                // Membelah '15:00|15:59' menjadi array: [0] => 15:00, [1] => 15:59
+                $pecahWaktu = explode('|', $waktu); 
+                
+                $dataSiaran[] = [
+                    'jam_tayang'      => $pecahWaktu[0], // Ambil 15:00
+                    'jam_selesai'     => $pecahWaktu[1], // Ambil 15:59
+                    'nama_program'    => $namaAcara,
+                    'jenis_acara'     => $request->jenis_acara[$index],
+                    'status_siaran'   => $request->status_siaran[$index],
+                    'catatan_kendala' => $request->catatan_kendala[$index] ?? null, 
+                ];
+            }
+            
+            // Keajaiban Laravel: Simpan semua array anak sekaligus ke tabel laporan_siarans!
+            $laporanUtama->siarans()->createMany($dataSiaran);
+
+            return back()->with('success', 'HORE! Laporan Induk & Log Jam Tayang berhasil disimpan secepat kilat!');
 
         } catch (\Exception $e) {
             return back()->with('error', 'YAH GAGAL: ' . $e->getMessage());
@@ -101,56 +136,50 @@ class EvidenceController extends Controller
 
     public function index()
     {
-        $evidences = LaporanUtama::latest()->get();
+        $evidences = LaporanUtama::with('siarans')->latest()->get();
         return view('index', compact('evidences'));
     }
 
+    // MENGHAPUS FILE DARI LOCAL STORAGE
     public function destroy($id)
     {
         try {
             $laporan = LaporanUtama::findOrFail($id);
 
-            // 1. Siapkan Kunci Google Drive
-            $client = new Client();
-            $client->setClientId(env('GOOGLE_CLIENT_ID'));
-            $client->setClientSecret(env('GOOGLE_CLIENT_SECRET'));
-            $client->refreshToken(env('GOOGLE_REFRESH_TOKEN'));
-            $service = new Drive($client);
-
-            // 2. Bongkar keranjang JSON dan hapus file fisiknya satu per satu di Drive
+            // Hapus file fisik lokalnya
             if (is_array($laporan->evidence)) {
                 foreach ($laporan->evidence as $ev) {
-                    if (isset($ev['file_id'])) {
-                        try {
-                            // Tembak file berdasarkan ID aslinya
-                            $service->files->delete($ev['file_id']);
-                        } catch (\Exception $e) {
-                            // Jika file di Drive sudah terhapus manual, abaikan dan lanjut ke file berikutnya
-                            continue; 
-                        }
+                    if (isset($ev['file_id']) && Storage::disk('public')->exists($ev['file_id'])) {
+                        Storage::disk('public')->delete($ev['file_id']);
                     }
                 }
             }
 
-            // 3. Hapus catatan laporan dari database
             $laporan->delete();
 
-            return back()->with('success', 'Laporan dan SEMUA file Evidence di Google Drive berhasil dihapus bersih!');
+            return back()->with('success', 'Laporan dan SEMUA file di server lokal berhasil dihapus bersih!');
 
         } catch (\Exception $e) {
             return back()->with('error', 'YAH GAGAL menghapus: ' . $e->getMessage());
         }
     }
 
-    // DOWNLOAD SEKARANG BERUBAH MENJADI GENERATOR PDF!
+    // GENERATOR PDF (Tetap Menggunakan Fungsi yang Sama)
     public function download($id)
     {
-        $laporan = LaporanUtama::findOrFail($id);
+        // Tambahkan with('siarans') agar data log siaran ikut terpanggil
+        $laporan = LaporanUtama::with('siarans')->findOrFail($id);
         
-        // Konfigurasi PDF agar mengizinkan render image dari URL eksternal (Google Drive)
         $pdf = Pdf::setOptions(['isHtml5ParserEnabled' => true, 'isRemoteEnabled' => true])
                   ->loadView('pdf_resume', compact('laporan'));
         
         return $pdf->download('Resume_Laporan_TD_' . $laporan->nama_petugas . '.pdf');
+    }
+    // GENERATOR EXCEL REKAP
+    public function exportExcel()
+    {
+        // Mengunduh file Excel dengan nama dinamis sesuai tanggal hari ini
+        $namaFile = 'Rekap_TD_Sore_' . date('Y-m-d') . '.xlsx';
+        return Excel::download(new LaporanExport, $namaFile);
     }
 }

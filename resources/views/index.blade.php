@@ -7,6 +7,7 @@
     <!-- Bootstrap 5 & Font Inter -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <style>
         body { background-color: #0f172a; font-family: 'Inter', sans-serif; color: #cbd5e1; }
         .card { background-color: #1e293b; border: 1px solid #334155; border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); }
@@ -33,9 +34,14 @@
     <div class="container-fluid mt-5 mb-5" style="max-width: 1200px;">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h4 class="mb-0 text-white fw-bold">Laporan <span style="color: #6366f1;">TD Sore</span></h4>
-                <a href="/upload" class="btn btn-primary shadow-sm">+ Buat Laporan Baru</a>
-            </div>
+    <h4 class="mb-0 text-white fw-bold">Laporan <span style="color: #6366f1;">TD Sore</span></h4>
+    
+    <!-- Area Tombol -->
+    <div>
+        <a href="/export-excel" class="btn btn-success shadow-sm me-2">📊 Export Excel</a>
+        <a href="/upload" class="btn btn-primary shadow-sm">+ Buat Laporan Baru</a>
+    </div>
+</div>
             <div class="card-body">
                 
                 @if(session('success'))
@@ -54,10 +60,10 @@
                         <thead>
                             <tr>
                                 <th width="5%" class="text-center">No</th>
-                                <th width="15%">Info Laporan</th>
-                                <th width="10%" class="text-center">Status</th>
-                                <th width="55%">Daftar Evidence (Thumbnail & Link)</th>
-                                <th width="15%" class="text-center">Aksi</th>
+                                <th width="45%">Info & Log Siaran</th>
+                                <th width="15%" class="text-center">Status</th>
+                                <th width="15%" class="text-center">Evidence</th>
+                                <th width="20%" class="text-center">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -66,9 +72,25 @@
                                 <td class="text-center text-muted">{{ $index + 1 }}</td>
                                 
                                 <td>
+                                    <!-- INFO LAPORAN -->
                                     <div class="text-white fw-medium mb-1">{{ \Carbon\Carbon::parse($item->tanggal_tugas)->format('d M Y') }}</div>
                                     <div class="text-info fw-bold" style="font-size: 0.85rem;">TD: {{ $item->nama_petugas }}</div>
-                                    <div class="text-muted" style="font-size: 0.75rem;">PDU: {{ $item->pdu_nama }}<br>TX: {{ $item->tx_petugas_nama }}</div>
+                                    <div class="text-muted mb-2" style="font-size: 0.75rem;">PDU: {{ $item->pdu_nama }} | TX: {{ $item->tx_petugas_nama }}</div>
+                                    
+                                    <!-- LOG SIARAN DIJADIKAN SATU KOLOM -->
+                                    <div class="mt-2 pt-2 border-top border-secondary border-opacity-25">
+                                        <small class="text-white fw-bold">Log Siaran:</small>
+                                        <ul class="list-unstyled mb-0 mt-1" style="font-size: 0.75rem;">
+                                            @foreach($item->siarans as $siaran)
+                                                <li class="text-muted mb-1">
+                                                    <span class="text-info fw-bold">{{ \Carbon\Carbon::parse($siaran->jam_tayang)->format('H:i') }}</span> - {{ $siaran->nama_program }} 
+                                                    <span class="badge {{ $siaran->status_siaran == 'Aman' ? 'bg-success' : 'bg-danger' }}" style="font-size: 0.6rem;">
+                                                        {{ $siaran->status_siaran }}
+                                                    </span>
+                                                </li>
+                                            @endforeach
+                                        </ul>
+                                    </div>
                                 </td>
                                 
                                 <td class="text-center">
@@ -87,34 +109,18 @@
                                         @endif
                                     </div>
                                 </td>
-                                
-                                <!-- KOLOM BARU KHUSUS EVIDENCE -->
-                                <td>
-                                    @if(is_array($item->evidence) && count($item->evidence) > 0)
-                                        <div class="d-flex flex-wrap gap-2">
-                                            @foreach($item->evidence as $ev)
-                                                <div class="p-2 border border-secondary border-opacity-25 rounded bg-dark d-flex flex-column" style="width: 140px;">
-                                                    <div class="fw-bold text-truncate text-white mb-1" style="font-size: 0.7rem;" title="{{ $ev['keterangan'] }}">{{ $ev['keterangan'] }}</div>
-                                                    
-                                                    <!-- Thumbnail Fast Load dari Google API -->
-                                                    <div class="d-flex align-items-center justify-content-center bg-secondary bg-opacity-10 border border-secondary border-opacity-25 rounded mb-1" style="height: 70px; width: 100%;">
-                                                    <span style="font-size: 1.5rem; filter: grayscale(100%); opacity: 0.7;">📄</span>
-                                                    </div>                                                   
-                                                    <div class="text-truncate text-muted mb-2" style="font-size: 0.65rem;" title="{{ $ev['filename'] }}">{{ $ev['filename'] }}</div>
-                                                    
-                                                    <a href="{{ $ev['link_drive'] }}" target="_blank" class="btn btn-outline-info btn-sm py-0 mt-auto" style="font-size: 0.7rem;">🔗 Buka File</a>
-                                                </div>
-                                            @endforeach
-                                        </div>
-                                    @else
-                                        <span class="text-muted fst-italic">Tidak ada evidence dilampirkan.</span>
-                                    @endif
+                               
+                                <td class="text-center align-middle">
+                                    <!-- TOMBOL PEMANGGIL MODAL POP-UP -->
+                                    <button type="button" class="btn btn-sm btn-outline-info w-100" data-bs-toggle="modal" data-bs-target="#modalEvidence-{{ $item->id }}">
+                                        🖼️ Lihat Evidence
+                                    </button>
                                 </td>
 
                                 <td>
                                     <div class="d-flex flex-column justify-content-center gap-2">
                                         <a href="/evidence/{{ $item->id }}/download" class="btn btn-success" title="Unduh PDF Resume">📄 Unduh PDF</a>
-                                        <form action="/evidence/{{ $item->id }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus laporan ini beserta semua gambarnya di Google Drive?');">
+                                        <form action="/evidence/{{ $item->id }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus laporan ini beserta semua file lokalnya?');">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="btn btn-danger w-100">🗑️ Hapus</button>
@@ -122,6 +128,50 @@
                                     </div>
                                 </td>
                             </tr>
+
+                            <!-- ========================================== -->
+                            <!-- MODAL POP-UP EVIDENCE (Sembunyi by default)-->
+                            <!-- ========================================== -->
+                            <div class="modal fade" id="modalEvidence-{{ $item->id }}" tabindex="-1" aria-labelledby="modalLabel-{{ $item->id }}" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered modal-lg">
+                                    <div class="modal-content bg-dark text-white border-secondary">
+                                        <div class="modal-header border-secondary border-opacity-25">
+                                            <h5 class="modal-title" id="modalLabel-{{ $item->id }}">
+                                                🖼️ Bukti Evidence - TD: {{ $item->nama_petugas }}
+                                            </h5>
+                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        
+                                        <div class="modal-body">
+                                            @if(is_array($item->evidence) && count($item->evidence) > 0)
+                                                <div class="row g-3">
+                                                    @foreach($item->evidence as $ev)
+                                                        <div class="col-md-6">
+                                                            <div class="card bg-secondary bg-opacity-10 border-secondary border-opacity-25 h-100">
+                                                                <img src="{{ $ev['link_drive'] }}" class="card-img-top" alt="Evidence" style="height: 200px; object-fit: cover;">
+                                                                <div class="card-body p-2 text-center">
+                                                                    <p class="card-text small mb-2 fw-bold text-info">{{ $ev['keterangan'] }}</p>
+                                                                    <a href="{{ $ev['link_drive'] }}" target="_blank" class="btn btn-sm btn-primary py-1 px-3">
+                                                                        Buka File Penuh
+                                                                    </a>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+                                            @else
+                                                <p class="text-center text-muted my-3">Tidak ada file evidence yang dilampirkan pada laporan ini.</p>
+                                            @endif
+                                        </div>
+                                        
+                                        <div class="modal-footer border-secondary border-opacity-25">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- ========================================== -->
+
                             @empty
                             <tr>
                                 <td colspan="5" class="text-center py-5 text-muted">
