@@ -83,7 +83,7 @@
                                         <ul class="list-unstyled mb-0 mt-1" style="font-size: 0.75rem;">
                                             @foreach($item->siarans as $siaran)
                                                 <li class="text-muted mb-1">
-                                                    <span class="text-info fw-bold">{{ \Carbon\Carbon::parse($siaran->jam_tayang)->format('H:i') }}</span> - {{ $siaran->nama_program }} 
+                                                    <span class="text-info fw-bold">{{ \Carbon\Carbon::parse($siaran->jam_tayang)->format('H:i') }} - {{ \Carbon\Carbon::parse($siaran->jam_selesai)->format('H:i') }}</span> | {{ $siaran->nama_program }} 
                                                     <span class="badge {{ $siaran->status_siaran == 'Aman' ? 'bg-success' : 'bg-danger' }}" style="font-size: 0.6rem;">
                                                         {{ $siaran->status_siaran }}
                                                     </span>

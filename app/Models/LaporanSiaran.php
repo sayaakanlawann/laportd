@@ -19,6 +19,6 @@ class LaporanSiaran extends Model
     // Fungsi Relasi: Anak ini milik siapa?
     public function laporanUtama()
     {
-        return $this->belongsTo(LaporanUtama::class);
+        return $this->belongsTo(LaporanUtama::class, 'laporan_utama_id');
     }
 }

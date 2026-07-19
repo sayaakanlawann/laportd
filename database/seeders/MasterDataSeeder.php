@@ -99,6 +99,12 @@ class MasterDataSeeder extends Seeder
             $programs[] = ['nama_program' => $p, 'jam_tayang_default' => '17:00|17:59', 'is_aktif' => true, 'created_at' => $now, 'updated_at' => $now];
         }
 
+        // TAMBAHAN BARU UNTUK JAM 18:00
+        $jam18 = ['Amazing Indonesia', 'Anak Indonesia', 'Fiqih Wanita', 'Inspirasi Indonesia', 'Jejak Islam', 'Kajian Tauhid', 'Kuliner Indonesia', 'Lintas Borneo', 'Mutiara Hadits', 'Pesona Indonesia', 'Potensi Banua', 'Zona Tani'];
+        foreach($jam18 as $p) {
+            $programs[] = ['nama_program' => $p, 'jam_tayang_default' => '18:00|18:59', 'is_aktif' => true, 'created_at' => $now, 'updated_at' => $now];
+        }
+
         DB::table('program_siarans')->insert($programs);
     }
 }
