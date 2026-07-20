@@ -3,52 +3,41 @@
 namespace App\Exports;
 
 use App\Models\LaporanUtama;
-use Maatwebsite\Excel\Concerns\FromCollection;
-use Maatwebsite\Excel\Concerns\WithHeadings;
-use Maatwebsite\Excel\Concerns\WithMapping;
-use Maatwebsite\Excel\Concerns\ShouldAutoSize;
+use Maatwebsite\Excel\Concerns\WithMultipleSheets;
 use Carbon\Carbon;
 
-class LaporanExport implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize
+class LaporanExport implements WithMultipleSheets
 {
-    public function collection()
+    protected $mode;
+
+    public function __construct($mode)
     {
-        // Kita ambil semua log siaran (anak) dan hubungkan ke laporan utama (induk)
-        return \App\Models\LaporanSiaran::with('laporanUtama')->latest()->get();
+        $this->mode = $mode; // Bisa berisi "2026-07" atau "all"
     }
 
-    public function map($siaran): array
+    public function sheets(): array
     {
-        // Mengambil data dari induk (LaporanUtama)
-        $laporan = $siaran->laporanUtama;
+        $sheets = [];
 
-        return [
-            Carbon::parse($laporan->tanggal_tugas)->format('d-m-Y'),
-            $laporan->nama_petugas,
-            $laporan->pdu_nama,
-            $laporan->tx_petugas_nama,
-            
-            // Data Detail Log Siaran
-            Carbon::parse($siaran->jam_tayang)->format('H:i') . ' - ' . Carbon::parse($siaran->jam_selesai)->format('H:i'),
-            $siaran->nama_program,
-            $siaran->jenis_acara,
-            $siaran->status_siaran,
-            $siaran->catatan_kendala ?? '-',
-        ];
-    }
+        if ($this->mode === 'all') {
+            // Jika mode "all", cari semua bulan yang ada datanya di tabel laporan
+            $listBulan = LaporanUtama::select('tanggal_tugas')
+                ->get()
+                ->map(function ($item) {
+                    return Carbon::parse($item->tanggal_tugas)->format('Y-m');
+                })
+                ->unique()
+                ->sortDesc(); // Urutkan dari bulan terbaru
 
-    public function headings(): array
-    {
-        return [
-            'Tanggal',
-            'TD',
-            'PDU',
-            'TX',
-            'Waktu Siaran',
-            'Nama Program',
-            'Jenis Acara',
-            'Status',
-            'Catatan Kendala'
-        ];
+            // Looping dan buatkan Sheet untuk setiap bulan yang ditemukan
+            foreach ($listBulan as $bulan) {
+                $sheets[] = new LaporanBulanSheet($bulan);
+            }
+        } else {
+            // Jika hanya pilih 1 bulan spesifik, buat 1 sheet saja
+            $sheets[] = new LaporanBulanSheet($this->mode);
+        }
+
+        return $sheets;
     }
 }

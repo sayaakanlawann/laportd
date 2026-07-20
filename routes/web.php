@@ -96,3 +96,9 @@ Route::post('/master-data/update-petugas', [MasterDataController::class, 'update
 Route::post('/master-data/update-program', [MasterDataController::class, 'updateProgram']);
 Route::post('/master-data/store-petugas', [MasterDataController::class, 'storePetugas']);
 Route::post('/master-data/store-program', [MasterDataController::class, 'storeProgram']);
+
+// Rute untuk menampilkan form edit
+Route::get('/laporan/{id}/edit', [\App\Http\Controllers\EvidenceController::class, 'edit']);
+
+// Rute untuk memproses update data (wajib pakai PUT/PATCH)
+Route::put('/laporan/{id}', [\App\Http\Controllers\EvidenceController::class, 'update']);

@@ -127,8 +127,7 @@ class EvidenceController extends Controller
             // Keajaiban Laravel: Simpan semua array anak sekaligus ke tabel laporan_siarans!
             $laporanUtama->siarans()->createMany($dataSiaran);
 
-            return back()->with('success', 'HORE! Laporan Induk & Log Jam Tayang berhasil disimpan secepat kilat!');
-
+return redirect('/evidence')->with('success', 'HORE! Laporan Induk & Log Jam Tayang berhasil disimpan secepat kilat!');
         } catch (\Exception $e) {
             return back()->with('error', 'YAH GAGAL: ' . $e->getMessage());
         }
@@ -176,10 +175,151 @@ class EvidenceController extends Controller
         return $pdf->download('Resume_Laporan_TD_' . $laporan->nama_petugas . '.pdf');
     }
     // GENERATOR EXCEL REKAP
-    public function exportExcel()
+    // GENERATOR EXCEL REKAP
+    // GENERATOR EXCEL REKAP
+    public function exportExcel(Request $request)
     {
-        // Mengunduh file Excel dengan nama dinamis sesuai tanggal hari ini
-        $namaFile = 'Rekap_TD_Sore_' . date('Y-m-d') . '.xlsx';
-        return Excel::download(new LaporanExport, $namaFile);
+        // Cek apakah mode Export All ditekan
+        if ($request->has('export_all')) {
+            $namaFile = 'Rekap_TD_Semua_Bulan_' . date('Ymd') . '.xlsx';
+            return Excel::download(new LaporanExport('all'), $namaFile);
+        } 
+        
+        // Jika hanya 1 bulan
+        $bulan = $request->bulan; 
+        $namaFile = 'Rekap_TD_' . $bulan . '.xlsx';
+        return Excel::download(new LaporanExport($bulan), $namaFile);
+    }
+
+    // MENAMPILKAN FORM EDIT DENGAN DATA LAMA
+    public function edit($id)
+    {
+        // Panggil laporan beserta data log siarannya
+        $laporan = LaporanUtama::with('siarans')->findOrFail($id);
+        
+        // Panggil data master seperti biasa
+        $td = Petugas::where('is_aktif', true)->where('jabatan_utama', 'Technical Director')->orderBy('nama')->get();
+        $pdu = Petugas::where('is_aktif', true)->where('jabatan_utama', 'PDU')->orderBy('nama')->get();
+        $tx = Petugas::where('is_aktif', true)->where('jabatan_utama', 'Transmisi')->orderBy('nama')->get();
+        
+        $programsGrouped = ProgramSiaran::where('is_aktif', true)
+                                ->orderBy('nama_program')
+                                ->get()
+                                ->groupBy('jam_tayang_default'); 
+        
+        return view('edit', compact('laporan', 'td', 'pdu', 'tx', 'programsGrouped'));
+    }
+
+    // MEMPROSES PERUBAHAN DATA
+    public function update(Request $request, $id)
+    {
+        // 1. Validasi (Sama seperti store, TAPI file upload menjadi nullable)
+        $request->validate([
+            'tanggal_tugas'     => 'required|date',
+            'nama_petugas'      => 'required',
+            'pdu_nama'          => 'required',
+            'tx_petugas_nama'   => 'required',
+            'pra_kendala'       => 'required',
+            'kru_lengkap'       => 'required',
+            'kesimpulan'        => 'required',
+            'waktu_siaran'      => 'required|array',
+            'waktu_siaran.*'    => 'required',
+            'jenis_acara'       => 'required|array',
+            'jenis_acara.*'     => 'required',
+            'nama_program'      => 'required|array',
+            'nama_program.*'    => 'required',
+            'status_siaran'     => 'required|array',
+            'status_siaran.*'   => 'required',
+            
+            // File opsional: Hanya divalidasi kalau user mengunggah file baru
+            'ev_alat_studio'    => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:10240',
+            'ev_jaringan'       => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:10240',
+            'ev_jalur_av'       => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:10240',
+            'pra_ev_kendala'    => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:10240',
+        ]);
+
+        try {
+            $laporan = LaporanUtama::findOrFail($id);
+            $kumpulanEvidence = is_array($laporan->evidence) ? $laporan->evidence : [];
+
+            // Helper function untuk Replace File Lama
+            $updateFile = function ($namaInputFile, $keterangan) use ($request, &$kumpulanEvidence) {
+                if ($request->hasFile($namaInputFile)) {
+                    // Cari dan hapus file lama dari array & storage
+                    foreach ($kumpulanEvidence as $key => $ev) {
+                        if ($ev['keterangan'] === $keterangan) {
+                            if (isset($ev['file_id']) && Storage::disk('public')->exists($ev['file_id'])) {
+                                Storage::disk('public')->delete($ev['file_id']);
+                            }
+                            unset($kumpulanEvidence[$key]); // Buang dari array
+                        }
+                    }
+
+                    // Upload file baru
+                    $file = $request->file($namaInputFile);
+                    $namaFile = time() . '_' . $namaInputFile . '_' . $file->getClientOriginalName();
+                    $path = $file->storeAs('evidence', $namaFile, 'public');
+                    
+                    // Masukkan ke array evidence
+                    $kumpulanEvidence[] = [
+                        'keterangan' => $keterangan,
+                        'filename'   => $namaFile,
+                        'file_id'    => $path,
+                        'link_drive' => asset('storage/' . $path)
+                    ];
+                }
+            };
+
+            // Jalankan cek upload
+            $updateFile('ev_alat_studio', 'Alat Studio & Master');
+            $updateFile('ev_jaringan', 'Pengecekan Jaringan');
+            $updateFile('ev_jalur_av', 'Jalur Audio & Video');
+            $updateFile('pra_ev_kendala', 'Evidence Kendala (Pra-Siaran)');
+
+            // Kerucutkan ulang index array (opsional tapi disarankan)
+            $kumpulanEvidence = array_values($kumpulanEvidence);
+
+            // 2. Update Data Induk
+            $laporan->update([
+                'tanggal_tugas'   => $request->tanggal_tugas,
+                'nama_petugas'    => $request->nama_petugas,
+                'pdu_nama'        => $request->pdu_nama,
+                'tx_petugas_nama' => $request->tx_petugas_nama,
+                'pra_kendala'     => $request->pra_kendala,
+                'pra_ket_kendala' => $request->pra_ket_kendala,
+                'kru_lengkap'     => $request->kru_lengkap,
+                'kesimpulan'      => $request->kesimpulan,
+                'evidence'        => $kumpulanEvidence, 
+            ]);
+
+            // 3. Update Log Siaran (Trik Cepat: Hapus semua log lama, masukkan log baru dari form)
+            $laporan->siarans()->delete(); 
+            
+            $dataSiaran = [];
+            foreach ($request->waktu_siaran as $index => $waktu) {
+                $namaAcara = $request->nama_program[$index];
+                if ($namaAcara === 'Other') {
+                    $namaAcara = $request->nama_program_custom[$index];
+                }
+                
+                $pecahWaktu = explode('|', $waktu); 
+                
+                $dataSiaran[] = [
+                    'jam_tayang'      => $pecahWaktu[0],
+                    'jam_selesai'     => $pecahWaktu[1],
+                    'nama_program'    => $namaAcara,
+                    'jenis_acara'     => $request->jenis_acara[$index],
+                    'status_siaran'   => $request->status_siaran[$index],
+                    'catatan_kendala' => $request->catatan_kendala[$index] ?? null, 
+                ];
+            }
+            
+            $laporan->siarans()->createMany($dataSiaran);
+
+            return redirect('/evidence')->with('success', 'Laporan berhasil diperbarui dengan sempurna!');
+
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal memperbarui: ' . $e->getMessage());
+        }
     }
 }

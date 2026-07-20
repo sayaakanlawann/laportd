@@ -38,7 +38,49 @@
     
     <!-- Area Tombol -->
     <div>
-        <a href="/export-excel" class="btn btn-success shadow-sm me-2">📊 Export Excel</a>
+        <!-- Form Export Filter Bulan -->
+<!-- Tombol Pemicu Pop-up -->
+<button type="button" class="btn btn-success fw-bold" data-bs-toggle="modal" data-bs-target="#modalExport">
+    📥 Export Excel
+</button>
+
+<!-- Pop-up Modal Export -->
+<div class="modal fade" id="modalExport" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-white border-secondary">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title fw-bold">Pilih Mode Export Excel</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                
+                <!-- Opsi 1: Per Bulan -->
+                <form action="/export-excel" method="GET" class="mb-4">
+                    <label class="form-label text-warning fw-bold">Opsi 1: Pilih Bulan Tertentu</label>
+                    <div class="input-group">
+                        <input type="month" name="bulan" class="form-control bg-dark text-white border-secondary" required>
+                        <button type="submit" class="btn btn-primary">Download</button>
+                    </div>
+                </form>
+
+                <div class="d-flex align-items-center my-4">
+                    <hr class="flex-grow-1 border-secondary">
+                    <span class="mx-3 text-muted small">ATAU</span>
+                    <hr class="flex-grow-1 border-secondary">
+                </div>
+
+                <!-- Opsi 2: Export Semua -->
+                <form action="/export-excel" method="GET">
+                    <label class="form-label text-info fw-bold">Opsi 2: Export Seluruh Data</label>
+                    <p class="small text-muted mb-3">Sistem akan otomatis memisahkan data per bulan ke dalam Sheet (Tab) yang berbeda di Excel.</p>
+                    <input type="hidden" name="export_all" value="1">
+                    <button type="submit" class="btn btn-info w-100 text-dark fw-bold">Download Semua Data (Pisah Sheet)</button>
+                </form>
+
+            </div>
+        </div>
+    </div>
+</div>
         <a href="/upload" class="btn btn-primary shadow-sm">+ Buat Laporan Baru</a>
     </div>
 </div>
@@ -119,6 +161,9 @@
 
                                 <td>
                                     <div class="d-flex flex-column justify-content-center gap-2">
+                                        <a href="/laporan/{{ $item->id }}/edit" class="btn btn-sm btn-warning fw-bold text-dark me-1" title="Edit Laporan">
+    ✏️ Edit
+</a>
                                         <a href="/evidence/{{ $item->id }}/download" class="btn btn-success" title="Unduh PDF Resume">📄 Unduh PDF</a>
                                         <form action="/evidence/{{ $item->id }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus laporan ini beserta semua file lokalnya?');">
                                             @csrf
