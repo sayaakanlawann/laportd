@@ -25,6 +25,12 @@ class PetugasResource extends Resource
     protected static string | \UnitEnum | null $navigationGroup = '⚙️ Master Data';
     protected static string |\BackedEnum | null $navigationIcon = 'heroicon-o-users'; // Ikon User
     protected static ?int $navigationSort = 2;
+    public static function canViewAny(): bool
+    {
+        $user = auth()->user();
+        // Hanya Admin dan Developer (Noa) yang bisa melihat dan mengakses menu ini
+        return $user->role === 'admin' || $user->email === 'noa@dev.id';
+    }
     
 
     protected static ?string $recordTitleAttribute = 'sidebar';

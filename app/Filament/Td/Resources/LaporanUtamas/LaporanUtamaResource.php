@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources\LaporanUtamas;
+namespace App\Filament\Resources\Td;
 use Filament\Forms;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Tables;
@@ -19,6 +19,7 @@ use Illuminate\Support\HtmlString;
 use Filament\Actions\Action;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
+
 use Filament\Actions\EditAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\BulkActionGroup;
@@ -199,20 +200,6 @@ class LaporanUtamaResource extends Resource
             //
         ];
     }
-    // --- TAMBAHAN BEDAH MIKRO: FILTER DATA BERDASARKAN USER ---
-    public static function getEloquentQuery(): Builder
-    {
-        $user = Auth::user();
-
-        // 1. Jika yang login adalah Admin atau Developer (Noa), tampilkan SEMUA data
-        if ($user->role === 'admin' || $user->email === 'noa@dev.id') {
-            return parent::getEloquentQuery();
-        }
-
-        // 2. Jika yang login adalah TD biasa, HANYA tampilkan laporan dengan namanya
-        return parent::getEloquentQuery()->where('nama_petugas', $user->name);
-    }
-    // ---------------------------------------------------------
 
     public static function getPages(): array
     {
@@ -221,5 +208,10 @@ class LaporanUtamaResource extends Resource
             // 'create' => CreateLaporanUtama::route('/create'),
             // 'edit' => EditLaporanUtama::route('/{record}/edit'),
         ];
+    }
+    public static function getEloquentQuery(): Builder
+    {
+        // Asumsinya: nama user yang sedang login sama persis dengan 'nama_petugas' di tabel laporan
+        return parent::getEloquentQuery()->where('nama_petugas', auth()->user()->name);
     }
 }

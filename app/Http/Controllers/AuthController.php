@@ -22,13 +22,14 @@ class AuthController extends Controller
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
             
-            // Lempar ke Filament jika Admin
-            if (Auth::user()->role === 'admin') {
-                return redirect()->intended('/');
+            $user = Auth::user();
+            // Jika Admin / Dev, lempar ke Admin
+            if ($user->role === 'admin' || $user->email === 'noa@dev.id') {
+                return redirect()->intended('/admin');
             }
             
-            // Lempar ke /upload jika Kru biasa
-            return redirect()->intended('/');
+            // Jika TD, lempar ke Dashboard TD mereka sendiri
+            return redirect()->intended('/td');
         }
 
         return back()->withErrors(['email' => 'Email atau password tidak ditemukan.']);
