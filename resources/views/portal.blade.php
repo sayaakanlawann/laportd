@@ -40,7 +40,23 @@
     </style>
 </head>
 <body>
-
+    <!-- Badge Profil Pojok Kanan Atas -->
+    <div class="position-absolute top-0 end-0 p-4">
+        @auth
+            <div class="d-flex align-items-center gap-3 bg-secondary bg-opacity-25 px-3 py-2 rounded-pill border border-secondary border-opacity-50 shadow-sm">
+                <div class="text-end">
+                    <div class="text-white fw-bold" style="font-size: 0.85rem;">{{ auth()->user()->name }}</div>
+                    <div class="text-info" style="font-size: 0.7rem;">{{ strtoupper(auth()->user()->role) }} E-Logbook</div>
+                </div>
+                <form action="{{ route('logout') }}" method="POST" class="m-0">
+                    @csrf
+                    <button type="submit" class="btn btn-sm btn-danger rounded-pill fw-bold" style="font-size: 0.75rem;">Logout</button>
+                </form>
+            </div>
+        @else
+            <a href="{{ route('login') }}" class="btn btn-outline-info rounded-pill fw-bold px-4 shadow-sm">🔑 Login Petugas</a>
+        @endauth
+    </div>
     <div class="portal-container">
         <h1 class="portal-title">E-Logbook TD</h1>
         <p class="portal-subtitle">Pilih jadwal shift siaran Anda hari ini</p>

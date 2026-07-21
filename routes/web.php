@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\EvidenceController;
 use App\Http\Controllers\MasterDataController;
-
+use App\Http\Controllers\AuthController;
 
 Route::get('/', function () {
     return view('portal');
@@ -70,10 +70,31 @@ Route::get('/debug-upload', function () {
         return "ERROR GOOGLE LANGSUNG: " . $e->getMessage();
     }
 });
-
+// --- RUTE PUBLIK (LOBI & LOGIN) ---
+Route::get('/', function () { return view('portal'); });
+Route::get('/login', [AuthController::class, 'loginForm'])->name('login');
+Route::post('/login', [AuthController::class, 'login']);
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 // Rute untuk menampilkan form upload
-Route::get('/upload', [EvidenceController::class, 'create']);
+Route::middleware(['auth'])->group(function () {
+    Route::get('/upload', [\App\Http\Controllers\EvidenceController::class, 'create']);
+    Route::post('/upload', [\App\Http\Controllers\EvidenceController::class, 'store']);
+    
+    // (Opsional) Jika Admin ingin bisa mengedit laporan dari front-end
+    Route::get('/laporan/{id}/edit', [\App\Http\Controllers\EvidenceController::class, 'edit']);
+    Route::put('/laporan/{id}', [\App\Http\Controllers\EvidenceController::class, 'update']);
+}); 
 
+Route::middleware(['auth'])->group(function () {
+    Route::get('/evidence', [\App\Http\Controllers\EvidenceController::class, 'index']);
+    Route::delete('/evidence/{id}', [\App\Http\Controllers\EvidenceController::class, 'destroy']);
+    Route::get('/evidence/{id}/download', [\App\Http\Controllers\EvidenceController::class, 'download']);
+    Route::get('/export-excel', [\App\Http\Controllers\EvidenceController::class, 'exportExcel']);
+    
+    // Rute Master Data Front-End Abang
+    Route::get('/master-data', [\App\Http\Controllers\MasterDataController::class, 'index']);
+    // ... (masukkan sisa rute POST/DELETE master-data di dalam blok ini)
+});
 // Rute untuk menerima data saat tombol upload ditekan
 Route::post('/upload', [EvidenceController::class, 'store']);
 
