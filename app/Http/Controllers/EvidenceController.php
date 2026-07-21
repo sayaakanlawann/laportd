@@ -148,7 +148,7 @@ class EvidenceController extends Controller
             // Keajaiban Laravel: Simpan semua array anak sekaligus ke tabel laporan_siarans!
             $laporanUtama->siarans()->createMany($dataSiaran);
 
-            return redirect('/evidence')->with('success', 'HORE! Laporan Induk & Log Jam Tayang berhasil disimpan secepat kilat!');
+            return redirect('/admin')->with('success', 'HORE! Laporan Induk & Log Jam Tayang berhasil disimpan secepat kilat!');
         } catch (\Exception $e) {
             return back()->with('error', 'YAH GAGAL: ' . $e->getMessage());
         }

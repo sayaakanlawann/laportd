@@ -29,4 +29,10 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function canAccessPanel(\Filament\Panel $panel): bool
+    {
+        // Developer (noa@dev.id) atau Admin biasa boleh masuk panel Filament
+        return $this->role === 'admin' || $this->email === 'noa@dev.id';
+    }
 }

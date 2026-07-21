@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\EvidenceController;
 use App\Http\Controllers\MasterDataController;
 use App\Http\Controllers\AuthController;
-
+use App\Http\Middleware\DeveloperOnly;
 Route::get('/', function () {
     return view('portal');
 });
@@ -86,20 +86,19 @@ Route::middleware(['auth'])->group(function () {
 }); 
 
 Route::middleware(['auth'])->group(function () {
-    Route::get('/evidence', [\App\Http\Controllers\EvidenceController::class, 'index']);
+    
     Route::delete('/evidence/{id}', [\App\Http\Controllers\EvidenceController::class, 'destroy']);
     Route::get('/evidence/{id}/download', [\App\Http\Controllers\EvidenceController::class, 'download']);
     Route::get('/export-excel', [\App\Http\Controllers\EvidenceController::class, 'exportExcel']);
     
     // Rute Master Data Front-End Abang
-    Route::get('/master-data', [\App\Http\Controllers\MasterDataController::class, 'index']);
     // ... (masukkan sisa rute POST/DELETE master-data di dalam blok ini)
 });
 // Rute untuk menerima data saat tombol upload ditekan
 Route::post('/upload', [EvidenceController::class, 'store']);
 
 // Rute untuk melihat daftar dokumen
-Route::get('/evidence', [EvidenceController::class, 'index']);
+
 
 // Rute untuk menghapus dokumen
 Route::delete('/evidence/{id}', [EvidenceController::class, 'destroy']);
@@ -127,3 +126,10 @@ Route::get('/laporan/{id}/edit', [\App\Http\Controllers\EvidenceController::clas
 
 // Rute untuk memproses update data (wajib pakai PUT/PATCH)
 Route::put('/laporan/{id}', [\App\Http\Controllers\EvidenceController::class, 'update']);
+
+Route::middleware(['auth', DeveloperOnly::class])->group(function () {
+    Route::get('/evidence', [EvidenceController::class, 'index']);
+    
+    Route::get('/master-data', [MasterDataController::class, 'index']); 
+    // Masukkan rute debugging lainnya di dalam kurung kurawal ini
+});

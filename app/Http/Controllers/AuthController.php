@@ -24,7 +24,7 @@ class AuthController extends Controller
             
             // Lempar ke Filament jika Admin
             if (Auth::user()->role === 'admin') {
-                return redirect()->intended('/admin');
+                return redirect()->intended('/');
             }
             
             // Lempar ke /upload jika Kru biasa
