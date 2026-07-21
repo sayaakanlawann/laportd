@@ -14,6 +14,7 @@ return new class extends Migration
     Schema::create('laporan_utamas', function (Blueprint $table) {
         $table->id(); 
         $table->date('tanggal_tugas'); 
+        $table->string('shift');
         $table->string('nama_petugas'); 
         $table->string('pdu_nama'); 
         $table->string('tx_petugas_nama'); 

@@ -62,4 +62,26 @@ class MasterDataController extends Controller
         
         return back()->with('success', 'Program siaran baru berhasil ditambahkan!');
     }
+
+    // 6. Menghapus Petugas
+    public function deletePetugas($id)
+    {
+        $petugas = Petugas::find($id);
+        if ($petugas) {
+            $petugas->delete();
+            return back()->with('success', 'Petugas berhasil dihapus!');
+        }
+        return back()->with('error', 'Petugas tidak ditemukan!');
+    }
+
+    // 7. Menghapus Program Siaran
+    public function deleteProgram($id)
+    {
+        $program = ProgramSiaran::find($id);
+        if ($program) {
+            $program->delete();
+            return back()->with('success', 'Program siaran berhasil dihapus!');
+        }
+        return back()->with('error', 'Program siaran tidak ditemukan!');
+    }
 }

@@ -13,29 +13,51 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class EvidenceController extends Controller
 {
-    public function create() 
+    public function create(Request $request) 
     {
+        // 1. SOLUSI SHIFT HILANG: Gunakan Session agar aplikasi tidak pelupa
+        if ($request->has('shift') && in_array($request->query('shift'), ['pagi', 'sore'])) {
+            $shift = $request->query('shift');
+            session(['shift_terpilih' => $shift]); // Kunci pilihan di memori
+        } else {
+            // Jika URL cuma /upload, ambil dari memori (default ke sore jika kosong)
+            $shift = session('shift_terpilih', 'sore'); 
+        }
+
         $td = Petugas::where('is_aktif', true)->where('jabatan_utama', 'Technical Director')->orderBy('nama')->get();
         $pdu = Petugas::where('is_aktif', true)->where('jabatan_utama', 'PDU')->orderBy('nama')->get();
         $tx = Petugas::where('is_aktif', true)->where('jabatan_utama', 'Transmisi')->orderBy('nama')->get();
         
-        // Ambil program dan kelompokkan berdasarkan jam_tayang_default
+        // 2. SOLUSI JAM ACAK: Urutkan berdasarkan jam terlebih dahulu
         $programsGrouped = ProgramSiaran::where('is_aktif', true)
-                                ->orderBy('nama_program')
-                                ->get()
-                                ->groupBy('jam_tayang_default'); 
+            ->orderBy('jam_tayang_default') // <--- PERBAIKAN 1: Urutkan Jam 09.00 -> 10.00 dst
+            ->orderBy('nama_program')       // <--- PERBAIKAN 2: Baru urutkan abjad A-Z
+            ->get()
+            ->filter(function ($program) use ($shift) {
+                // Ambil 2 digit pertama dari jam_tayang_default (misal "09" dari "09:00|09:59")
+                $jamMulai = (int) substr($program->jam_tayang_default, 0, 2);
+                
+                if ($shift == 'pagi') {
+                    // Shift Pagi: Tampilkan jadwal di bawah jam 15:00
+                    return $jamMulai < 15;
+                } else {
+                    // Shift Sore: Tampilkan jadwal jam 15:00 ke atas
+                    return $jamMulai >= 15;
+                }
+            })
+            ->groupBy('jam_tayang_default'); 
         
-        // Bawa data tersebut ke halaman upload
-        return view('upload', compact('td', 'pdu', 'tx', 'programsGrouped'));
+        return view('upload', compact('td', 'pdu', 'tx', 'programsGrouped', 'shift'));
     }
 
     // MENYIMPAN DATA KE LOCAL STORAGE
     // MENYIMPAN DATA (LOKAL + REPEATER JAM SIARAN)
+    // MENYIMPAN DATA (LOKAL + REPEATER JAM SIARAN)
     public function store(Request $request)
     {
         // 1. Validasi Data (Termasuk Array dari Form Repeater)
-        // 1. Validasi Data (Termasuk Array dari Form Repeater)
         $request->validate([
+            'shift'             => 'required|in:pagi,sore', // <-- TAMBAHAN BEDAH MIKRO
             'tanggal_tugas'     => 'required|date',
             'nama_petugas'      => 'required',
             'pdu_nama'          => 'required',
@@ -49,9 +71,6 @@ class EvidenceController extends Controller
             'waktu_siaran.*'    => 'required',
             'jenis_acara'       => 'required|array',
             'jenis_acara.*'     => 'required',
-            
-            // HAPUS jam_tayang DARI SINI KARENA SUDAH DIGANTI waktu_siaran
-            
             'nama_program'      => 'required|array',
             'nama_program.*'    => 'required',
             'status_siaran'     => 'required|array',
@@ -93,6 +112,7 @@ class EvidenceController extends Controller
 
             // 2. Simpan Data Induk dan tampung di dalam variabel $laporanUtama
             $laporanUtama = LaporanUtama::create([
+                'shift'           => $request->shift, // <-- TAMBAHAN BEDAH MIKRO
                 'tanggal_tugas'   => $request->tanggal_tugas,
                 'nama_petugas'    => $request->nama_petugas,
                 'pdu_nama'        => $request->pdu_nama,
@@ -108,9 +128,10 @@ class EvidenceController extends Controller
             $dataSiaran = [];
             foreach ($request->waktu_siaran as $index => $waktu) {
                 $namaAcara = $request->nama_program[$index];
-            if ($namaAcara === 'Other') {
-                $namaAcara = $request->nama_program_custom[$index];
-            }
+                if ($namaAcara === 'Other') {
+                    $namaAcara = $request->nama_program_custom[$index];
+                }
+                
                 // Membelah '15:00|15:59' menjadi array: [0] => 15:00, [1] => 15:59
                 $pecahWaktu = explode('|', $waktu); 
                 
@@ -127,7 +148,7 @@ class EvidenceController extends Controller
             // Keajaiban Laravel: Simpan semua array anak sekaligus ke tabel laporan_siarans!
             $laporanUtama->siarans()->createMany($dataSiaran);
 
-return redirect('/evidence')->with('success', 'HORE! Laporan Induk & Log Jam Tayang berhasil disimpan secepat kilat!');
+            return redirect('/evidence')->with('success', 'HORE! Laporan Induk & Log Jam Tayang berhasil disimpan secepat kilat!');
         } catch (\Exception $e) {
             return back()->with('error', 'YAH GAGAL: ' . $e->getMessage());
         }

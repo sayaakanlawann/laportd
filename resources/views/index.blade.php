@@ -34,7 +34,11 @@
     <div class="container-fluid mt-5 mb-5" style="max-width: 1200px;">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-    <h4 class="mb-0 text-white fw-bold">Laporan <span style="color: #6366f1;">TD Sore</span></h4>
+                
+    <div class="d-flex align-items-center gap-3">
+        <a href="/" class="btn btn-secondary shadow-sm fw-bold">🏠 Lobi</a>
+        <h4 class="mb-0 text-white fw-bold">Riwayat <span style="color: #6366f1;">Laporan TD</span></h4>
+    </div>
     
     <!-- Area Tombol -->
     <div>
@@ -115,6 +119,13 @@
                                 
                                 <td>
                                     <!-- INFO LAPORAN -->
+                                    <div class="mb-2">
+        @if(strtolower($item->shift) == 'pagi')
+            <span class="badge bg-warning text-dark fw-bold border border-warning">Shift Pagi</span>
+        @else
+            <span class="badge bg-indigo text-white fw-bold border border-primary" style="background-color: #4f46e5;"> Shift Sore</span>
+        @endif
+    </div>
                                     <div class="text-white fw-medium mb-1">{{ \Carbon\Carbon::parse($item->tanggal_tugas)->format('d M Y') }}</div>
                                     <div class="text-info fw-bold" style="font-size: 0.85rem;">TD: {{ $item->nama_petugas }}</div>
                                     <div class="text-muted mb-2" style="font-size: 0.75rem;">PDU: {{ $item->pdu_nama }} | TX: {{ $item->tx_petugas_nama }}</div>

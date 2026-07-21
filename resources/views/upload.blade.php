@@ -20,15 +20,24 @@
     </style>
 </head>
 <body>
+    
 
     <div class="container mt-5 mb-5">
+        <a href="/" class="btn btn-sm btn-outline-secondary fw-bold mb-3">🏠 Kembali ke Lobi</a>
         <div class="card">
+            
             <div class="card-header">
-                <h5 class="mb-0 text-white fw-bold">Input Laporan Induk TD Sore</h5>
+                <!-- Judul form akan otomatis berubah jadi TD Pagi atau TD Sore -->
+    <h5 class="mb-0 text-white fw-bold">Input Laporan Induk TD {{ ucfirst($shift ?? 'Sore') }}</h5>
+    
+    <!-- Tombol Kembali ke Lobi -->
+    
             </div>
             <div class="card-body">
                 <form action="/upload" method="POST" enctype="multipart/form-data">
                     @csrf
+                    <!-- TAMBAHAN BEDAH MIKRO: Input rahasia untuk mengirim shift -->
+                    <input type="hidden" name="shift" value="{{ $shift ?? 'sore' }}">
                     
                     <div class="section-title">Data Personil & Waktu</div>
                     <div class="row mb-4">
@@ -139,12 +148,14 @@
     <div class="col-md-2">
         <label class="form-label text-muted small">Waktu Siaran</label>
         <select name="waktu_siaran[]" class="form-select bg-dark text-white border-secondary waktu-selector" onchange="gantiPilihanProgram(this)" required>
-            <option value="">-- Pilih --</option>
-            <option value="15:00|15:59">15:00 - 15:59</option>
-            <option value="16:00|16:59">16:00 - 16:59</option>
-            <option value="17:00|17:59">17:00 - 17:59</option>
-            <option value="18:00|18:59">18:00 - 18:59</option>
-        </select>
+        <option value="">-- Pilih --</option>
+        
+        <!-- LOOPING DINAMIS DARI CONTROLLER -->
+        @foreach($programsGrouped as $jam => $programs)
+            <option value="{{ $jam }}">{{ str_replace('|', ' - ', $jam) }}</option>
+        @endforeach
+        
+    </select>
     </div>
     
     <!-- Nama Program -->
@@ -165,6 +176,16 @@
                                     <option value="Live Studio 2">Live Studio 2</option>
                                     <option value="Live Studio 3">Live Studio 3</option>
                                     <option value="Relay">Relay</option>
+                                    @if(strtolower($shift) == 'pagi')
+                                    <optgroup label="📡 RELAY REGIONAL">
+                                        <option value="RELAY JAKARTA">Relay Jakarta</option>
+                                        <option value="RELAY KALBAR">Relay Kalbar</option>
+                                        <option value="RELAY KALTIM">Relay Kaltim</option>
+                                        <option value="RELAY KALTENG">Relay Kalteng</option>
+                                        <option value="RELAY KALTARA">Relay Kaltara</option>
+                                        </optgroup>
+                                    @endif
+
                                     <option value="Record">Record</option>
                                     <option value="Playback">Playback</option>
                                 </select>
@@ -235,12 +256,14 @@
                         <div class="col-md-2">
                             <label class="form-label text-muted small">Waktu Siaran</label>
                             <select name="waktu_siaran[]" class="form-select bg-dark text-white border-secondary waktu-selector" onchange="gantiPilihanProgram(this)" required>
-                                <option value="">-- Pilih --</option>
-                                <option value="15:00|15:59">15:00 - 15:59</option>
-                                <option value="16:00|16:59">16:00 - 16:59</option>
-                                <option value="17:00|17:59">17:00 - 17:59</option>
-                                <option value="18:00|18:59">18:00 - 18:59</option>
-                            </select>
+        <option value="">-- Pilih --</option>
+        
+        <!-- LOOPING DINAMIS DARI CONTROLLER -->
+        @foreach($programsGrouped as $jam => $programs)
+            <option value="{{ $jam }}">{{ str_replace('|', ' - ', $jam) }}</option>
+        @endforeach
+        
+    </select>
                         </div>
                         
                         <!-- 2. Nama Program (3 Kolom) -->
@@ -262,6 +285,15 @@
                                 <option value="Live Studio 2">Live Studio 2</option>
                                 <option value="Live Studio 3">Live Studio 3</option>
                                 <option value="Relay">Relay</option>
+                                @if(strtolower($shift) == 'pagi')
+                                    <optgroup label="📡 RELAY REGIONAL">
+                                        <option value="RELAY JAKARTA">Relay Jakarta</option>
+                                        <option value="RELAY KALBAR">Relay Kalbar</option>
+                                        <option value="RELAY KALTIM">Relay Kaltim</option>
+                                        <option value="RELAY KALTENG">Relay Kalteng</option>
+                                        <option value="RELAY KALTARA">Relay Kaltara</option>
+                                        </optgroup>
+                                    @endif
                                 <option value="Record">Record</option>
                                 <option value="Playback">Playback</option>
                             </select>

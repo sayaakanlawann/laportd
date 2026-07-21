@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class LaporanUtama extends Model
 {
     protected $fillable = [
+        'shift',
         'tanggal_tugas',
         'nama_petugas',
         'pdu_nama',

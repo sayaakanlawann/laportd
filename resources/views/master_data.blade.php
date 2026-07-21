@@ -41,8 +41,9 @@
                     <thead class="table-active">
                         <tr>
                             <th width="10%" class="text-center">No</th>
-                            <th width="45%">Nama Petugas</th>
-                            <th width="45%">Jabatan Utama</th>
+                            <th width="40%">Nama Petugas</th>
+                            <th width="40%">Jabatan Utama</th>
+                            <th width="10%" class="text-center">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -54,6 +55,13 @@
                                 data-id="{{ $p->id }}" data-column="nama" data-endpoint="/master-data/update-petugas">{{ $p->nama }}</td>
                             <td contenteditable="true" class="editable p-3" 
                                 data-id="{{ $p->id }}" data-column="jabatan_utama" data-endpoint="/master-data/update-petugas">{{ $p->jabatan_utama }}</td>
+                            <td class="text-center align-middle">
+                                <form action="/master-data/delete-petugas/{{ $p->id }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus petugas ini?');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Hapus">🗑️</button>
+                                </form>
+                            </td>
                         </tr>
                         @endforeach
                     </tbody>
@@ -88,8 +96,9 @@
                     <thead class="table-active">
                         <tr>
                             <th width="10%" class="text-center">No</th>
-                            <th width="60%">Nama Program</th>
+                            <th width="50%">Nama Program</th>
                             <th width="30%">Jam Tayang Default</th>
+                            <th width="10%" class="text-center">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -101,6 +110,13 @@
                                 data-id="{{ $prog->id }}" data-column="nama_program" data-endpoint="/master-data/update-program">{{ $prog->nama_program }}</td>
                             <td contenteditable="true" class="editable p-3" 
                                 data-id="{{ $prog->id }}" data-column="jam_tayang_default" data-endpoint="/master-data/update-program">{{ $prog->jam_tayang_default }}</td>
+                            <td class="text-center align-middle">
+                                <form action="/master-data/delete-program/{{ $prog->id }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus program ini?');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Hapus">🗑️</button>
+                                </form>
+                            </td>
                         </tr>
                         @endforeach
                     </tbody>

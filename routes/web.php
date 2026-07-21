@@ -7,7 +7,7 @@ use App\Http\Controllers\MasterDataController;
 
 
 Route::get('/', function () {
-    return view('welcome');
+    return view('portal');
 });
 
 Route::get('/test-drive', function () {
@@ -96,6 +96,10 @@ Route::post('/master-data/update-petugas', [MasterDataController::class, 'update
 Route::post('/master-data/update-program', [MasterDataController::class, 'updateProgram']);
 Route::post('/master-data/store-petugas', [MasterDataController::class, 'storePetugas']);
 Route::post('/master-data/store-program', [MasterDataController::class, 'storeProgram']);
+
+// Rute untuk menghapus master data
+Route::delete('/master-data/delete-petugas/{id}', [MasterDataController::class, 'deletePetugas']);
+Route::delete('/master-data/delete-program/{id}', [MasterDataController::class, 'deleteProgram']);
 
 // Rute untuk menampilkan form edit
 Route::get('/laporan/{id}/edit', [\App\Http\Controllers\EvidenceController::class, 'edit']);

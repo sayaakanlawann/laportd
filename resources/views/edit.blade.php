@@ -22,7 +22,7 @@
 <body>
 
     <div class="container mt-5 mb-5">
-        <a href="/" class="btn btn-outline-secondary mb-3">← Kembali ke Dashboard</a>
+        <a href="/evidence" class="btn btn-outline-secondary mb-3">← Kembali ke Dashboard</a>
         <div class="card">
             <div class="card-header">
                 <h5 class="mb-0 text-white fw-bold">Edit Laporan Induk TD</h5>
