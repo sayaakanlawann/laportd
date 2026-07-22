@@ -98,18 +98,27 @@
                     </div>
 
                     <div class="section-title">Evidence Rutin (Pra-Siaran)</div>
+                    <!-- Ubah col-md-4 menjadi col-md-3 agar muat 4 kotak berdampingan -->
                     <div class="row mb-4">
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Alat Studio & Master</label>
-                            <input type="file" name="ev_alat_studio" class="form-control" required>
+                        <!-- Input Baru: Evidence Sebelum Siaran -->
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Evidence Sebelum Siaran <br><small class="text-warning">(Maks 2 Gambar)</small></label>
+                            <input type="file" name="evidence_sebelum_siaran[]" class="form-control evidence-upload" accept="image/*" multiple required>
                         </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Pengecekan Jaringan</label>
-                            <input type="file" name="ev_jaringan" class="form-control" required>
+                        
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Alat Studio & Master <br><small class="text-warning">(Maks 2 Gambar)</small></label>
+                            <input type="file" name="ev_alat_studio[]" class="form-control evidence-upload" accept="image/*" multiple required>
                         </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Jalur Audio & Video</label>
-                            <input type="file" name="ev_jalur_av" class="form-control" required>
+                        
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Pengecekan Jaringan <br><small class="text-warning">(Maks 2 Gambar)</small></label>
+                            <input type="file" name="ev_jaringan[]" class="form-control evidence-upload" accept="image/*" multiple required>
+                        </div>
+                        
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Jalur Audio & Video <br><small class="text-warning">(Maks 2 Gambar)</small></label>
+                            <input type="file" name="ev_jalur_av[]" class="form-control evidence-upload" accept="image/*" multiple required>
                         </div>
                     </div>
 
@@ -132,8 +141,8 @@
                                         <textarea name="pra_ket_kendala" class="form-control" rows="3"></textarea>
                                     </div>
                                     <div>
-                                        <label class="form-label text-danger">Evidence Kendala (Opsional)</label>
-                                        <input type="file" name="pra_ev_kendala" class="form-control">
+                                        <label class="form-label text-danger">Evidence Kendala <small>(Opsional, Maks 2 Gambar)</small></label>
+<input type="file" name="pra_ev_kendala[]" class="form-control evidence-upload" accept="image/*" multiple>
                                     </div>
                                 </div>
                             </div>
@@ -431,6 +440,16 @@
                 inputCustom.removeAttribute('required');
             }
         }
+        // Validasi Maksimal 2 File untuk semua input evidence
+            const evidenceInputs = document.querySelectorAll('.evidence-upload');
+            evidenceInputs.forEach(input => {
+                input.addEventListener('change', function() {
+                    if (this.files.length > 2) {
+                        alert('Maksimal hanya boleh memilih 2 gambar!');
+                        this.value = ''; // Reset pilihan
+                    }
+                });
+            });
     </script>
 </body>
 </html>

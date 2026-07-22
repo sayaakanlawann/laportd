@@ -56,18 +56,18 @@ class EvidenceController extends Controller
     // MENYIMPAN DATA (LOKAL + REPEATER JAM SIARAN)
     public function store(Request $request)
     {
-        // 1. Validasi Data (Termasuk Array dari Form Repeater)
+        // 1. Validasi Data (Termasuk Array dari Form Repeater & Evidence)
         $request->validate([
-            'shift'             => 'required|in:pagi,sore', // <-- TAMBAHAN BEDAH MIKRO
+            'shift'             => 'required|in:pagi,sore',
             'tanggal_tugas'     => 'required|date',
             'nama_petugas'      => 'required',
             'pdu_nama'          => 'required',
-            'tx_petugas_nama'   => 'required|array',
+            'tx_petugas_nama'   => 'required|array', // <-- WAJIB ARRAY KARENA REPEATER
             'pra_kendala'       => 'required',
             'kru_lengkap'       => 'required',
             'kesimpulan'        => 'required',
             
-            // Validasi Array Repeater
+            // Validasi Array Repeater Siaran
             'waktu_siaran'      => 'required|array',
             'waktu_siaran.*'    => 'required',
             'jenis_acara'       => 'required|array',
@@ -78,51 +78,73 @@ class EvidenceController extends Controller
             'status_siaran.*'   => 'required',
             'catatan_kendala'   => 'nullable|array',
 
-            // --- VALIDASI FILE MAX 10MB (10240 KB) ---
-            'ev_alat_studio'    => 'required|file|mimes:jpg,jpeg,png,pdf|max:10240',
-            'ev_jaringan'       => 'required|file|mimes:jpg,jpeg,png,pdf|max:10240',
-            'ev_jalur_av'       => 'required|file|mimes:jpg,jpeg,png,pdf|max:10240',
-            'pra_ev_kendala'    => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:10240',
+            // --- VALIDASI MULTI-EVIDENCE (MAX 2 FILE PER INPUT) ---
+            'evidence_sebelum_siaran'   => 'required|array|max:2',
+            'evidence_sebelum_siaran.*' => 'file|mimes:jpg,jpeg,png,pdf|max:10240',
+
+            'ev_alat_studio'    => 'required|array|max:2',
+            'ev_alat_studio.*'  => 'file|mimes:jpg,jpeg,png,pdf|max:10240',
+            
+            'ev_jaringan'       => 'required|array|max:2',
+            'ev_jaringan.*'     => 'file|mimes:jpg,jpeg,png,pdf|max:10240',
+            
+            'ev_jalur_av'       => 'required|array|max:2',
+            'ev_jalur_av.*'     => 'file|mimes:jpg,jpeg,png,pdf|max:10240',
+            
+            'pra_ev_kendala'    => 'nullable|array|max:2',
+            'pra_ev_kendala.*'  => 'file|mimes:jpg,jpeg,png,pdf|max:10240',
         ]);
 
         try {
             $kumpulanEvidence = []; 
 
-            // Helper function untuk Upload Lokal (Tetap sama)
-            $uploadKeLokal = function ($namaInputFile, $keterangan) use ($request, &$kumpulanEvidence) {
+            // Helper function untuk Upload Lokal (Disesuaikan untuk Multi-File)
+            $uploadKeLokal = function ($namaInputFile, $keterangan, $prefixNama) use ($request, &$kumpulanEvidence) {
                 if ($request->hasFile($namaInputFile)) {
-                    $file = $request->file($namaInputFile);
-                    $namaFile = time() . '_' . $namaInputFile . '_' . $file->getClientOriginalName();
+                    $files = $request->file($namaInputFile);
                     
-                    $path = $file->storeAs('evidence', $namaFile, 'public');
-                    
-                    $kumpulanEvidence[] = [
-                        'keterangan' => $keterangan,
-                        'filename'   => $namaFile,
-                        'file_id'    => $path,
-                        'link_drive' => asset('storage/' . $path)
-                    ];
+                    // Lakukan perulangan untuk setiap file yang diupload di kolom ini
+                    foreach ($files as $index => $file) {
+                        $urutan = $index + 1; // Menghasilkan angka 1, 2, dst
+                        $ekstensi = $file->getClientOriginalExtension();
+                        
+                        // Format nama: 1_ev_sebelum_1701234567.jpg
+                        $namaFile = "{$urutan}_{$prefixNama}_" . time() . ".{$ekstensi}";
+                        
+                        $path = $file->storeAs('evidence', $namaFile, 'public');
+                        
+                        $kumpulanEvidence[] = [
+                            'keterangan' => $keterangan . " (Gambar $urutan)",
+                            'filename'   => $namaFile,
+                            'file_id'    => $path,
+                            'link_drive' => asset('storage/' . $path)
+                        ];
+                    }
                 }
             };
 
-            // Jalankan upload lokal satu per satu
-            $uploadKeLokal('ev_alat_studio', 'Alat Studio & Master');
-            $uploadKeLokal('ev_jaringan', 'Pengecekan Jaringan');
-            $uploadKeLokal('ev_jalur_av', 'Jalur Audio & Video');
-            $uploadKeLokal('pra_ev_kendala', 'Evidence Kendala (Pra-Siaran)');
+            // Jalankan upload lokal multi-file satu per satu
+            $uploadKeLokal('evidence_sebelum_siaran', 'Evidence Sebelum Siaran', 'sebelum_siaran');
+            $uploadKeLokal('ev_alat_studio', 'Alat Studio & Master', 'alat_studio');
+            $uploadKeLokal('ev_jaringan', 'Pengecekan Jaringan', 'jaringan');
+            $uploadKeLokal('ev_jalur_av', 'Jalur Audio & Video', 'jalur_av');
+            
+            if ($request->pra_kendala == '1') {
+                $uploadKeLokal('pra_ev_kendala', 'Evidence Kendala (Pra-Siaran)', 'kendala');
+            }
 
             // 2. Simpan Data Induk dan tampung di dalam variabel $laporanUtama
             $laporanUtama = LaporanUtama::create([
-                'shift'           => $request->shift, // <-- TAMBAHAN BEDAH MIKRO
+                'shift'           => $request->shift,
                 'tanggal_tugas'   => $request->tanggal_tugas,
                 'nama_petugas'    => $request->nama_petugas,
                 'pdu_nama'        => $request->pdu_nama,
-                'tx_petugas_nama' => $request->tx_petugas_nama,
+                'tx_petugas_nama' => $request->tx_petugas_nama, // Langsung masuk sebagai array JSON
                 'pra_kendala'     => $request->pra_kendala,
                 'pra_ket_kendala' => $request->pra_ket_kendala,
                 'kru_lengkap'     => $request->kru_lengkap,
                 'kesimpulan'      => $request->kesimpulan,
-                'evidence'        => $kumpulanEvidence, 
+                'evidence'        => $kumpulanEvidence, // Semua file masuk ke satu kolom JSON ini
             ]);
 
             // 3. Simpan Data Anak (Jam Siaran) menggunakan Relasi Eloquent
@@ -137,8 +159,8 @@ class EvidenceController extends Controller
                 $pecahWaktu = explode('|', $waktu); 
                 
                 $dataSiaran[] = [
-                    'jam_tayang'      => $pecahWaktu[0], // Ambil 15:00
-                    'jam_selesai'     => $pecahWaktu[1], // Ambil 15:59
+                    'jam_tayang'      => $pecahWaktu[0],
+                    'jam_selesai'     => $pecahWaktu[1],
                     'nama_program'    => $namaAcara,
                     'jenis_acara'     => $request->jenis_acara[$index],
                     'status_siaran'   => $request->status_siaran[$index],
@@ -149,7 +171,7 @@ class EvidenceController extends Controller
             // Keajaiban Laravel: Simpan semua array anak sekaligus ke tabel laporan_siarans!
             $laporanUtama->siarans()->createMany($dataSiaran);
 
-            return redirect('/admin')->with('success', 'HORE! Laporan Induk & Log Jam Tayang berhasil disimpan secepat kilat!');
+            return redirect('/upload')->with('success', 'HORE! Laporan Induk, Evidence Ganda, & Log Jam Tayang berhasil disimpan!');
         } catch (\Exception $e) {
             return back()->with('error', 'YAH GAGAL: ' . $e->getMessage());
         }
@@ -354,4 +376,5 @@ class EvidenceController extends Controller
             return back()->with('error', 'Gagal memperbarui: ' . $e->getMessage());
         }
     }
+    
 }

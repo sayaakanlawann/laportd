@@ -11,34 +11,25 @@ use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithTitle;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Auth;
-
 
 class LaporanBulanSheet implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize, WithStyles, WithTitle
 {
     protected $bulan;
-    protected $namaPetugas;
 
-    public function __construct($bulan, $namaPetugas = null)
+    public function __construct($bulan)
     {
         $this->bulan = $bulan;
-        $this->namaPetugas = $namaPetugas; // <-- Simpan ke memori
     }
 
     public function collection()
     {
         $pecah = explode('-', $this->bulan);
         
-        $query = LaporanUtama::with('siarans')
+        return LaporanUtama::with('siarans')
             ->whereYear('tanggal_tugas', $pecah[0])
-            ->whereMonth('tanggal_tugas', $pecah[1]);
-
-        // --- FILTER FINAL: HANYA TARIK DATA MILIK TD TERSEBUT ---
-        if ($this->namaPetugas) {
-            $query->where('nama_petugas', $this->namaPetugas);
-        }
-
-        return $query->orderBy('tanggal_tugas', 'ASC')->get();
+            ->whereMonth('tanggal_tugas', $pecah[1])
+            ->orderBy('tanggal_tugas', 'ASC')
+            ->get();
     }
 
     public function map($laporan): array
@@ -57,28 +48,51 @@ class LaporanBulanSheet implements FromCollection, WithHeadings, WithMapping, Sh
         }
 
         // AMBIL WAKTU SUBMIT ASLI DARI DATABASE (created_at)
-        // Kita paksa formatnya ke zona waktu WITA agar seragam
         $waktuSubmit = Carbon::parse($laporan->created_at)
                              ->timezone('Asia/Makassar')
                              ->format('d-M-Y H:i:s') . ' WITA';
+
+        // 1. OLAH DATA TX (ARRAY -> TEKS)
+        $petugasTx = is_array($laporan->tx_petugas_nama) 
+            ? implode(', ', $laporan->tx_petugas_nama) 
+            : $laporan->tx_petugas_nama;
+
+        // 2. OLAH DATA EVIDENCE (ARRAY -> TEKS BERSUSUN)
+        $evidenceText = '';
+        if (is_array($laporan->evidence) && count($laporan->evidence) > 0) {
+            foreach ($laporan->evidence as $ev) {
+                
+                // --- PERBAIKAN BEDAH MIKRO MUTLAK ---
+                // Jangan gunakan $ev['link_drive'] dari database.
+                // Rakit ulang linknya pakai asset() & file_id agar dinamis mengikuti Ngrok/Localhost!
+                $linkDinamis = asset('storage/' . $ev['file_id']);
+                
+                $evidenceText .= $ev['keterangan'] . " :\n" . $linkDinamis . "\n\n";
+            }
+            // Menghapus enter lebih/kosong di bagian paling bawah teks
+            $evidenceText = trim($evidenceText);
+        } else {
+            $evidenceText = 'Tidak ada evidence';
+        }
 
         return [
             $waktuSubmit, // <-- Field waktu form disubmit
             Carbon::parse($laporan->tanggal_tugas)->format('d-m-Y'),
             $laporan->nama_petugas,
             $laporan->pdu_nama,
-            $laporan->tx_petugas_nama,
+            $petugasTx, // <-- Variabel TX yang sudah dirapikan
             implode("\n", $waktu),
             implode("\n", $program),
             implode("\n", $jenis),
             implode("\n", $status),
-            $laporan->kesimpulan
+            $laporan->kesimpulan,
+            $evidenceText // <-- Tambahan kolom baru untuk Evidence
         ];
     }
 
     public function headings(): array
     {
-        // 2. TAMBAHKAN JUDUL HEADER BARU
+        // TAMBAHKAN JUDUL HEADER BARU DI AKHIR
         return [
             'Timestamp', 
             'Tanggal Tugas', 
@@ -89,16 +103,18 @@ class LaporanBulanSheet implements FromCollection, WithHeadings, WithMapping, Sh
             'Nama Program', 
             'Jenis Acara', 
             'Status & Kendala', 
-            'Kesimpulan'
+            'Kesimpulan',
+            'Link Evidence' // <-- Header Baru
         ];
     }
 
     public function styles(Worksheet $sheet)
     {
-        // 3. GESER ABJAD STYLING KARENA KOLOM BERTAMBAH (Dari I menjadi J)
-        $sheet->getStyle('F:I')->getAlignment()->setWrapText(true); // Kolom waktu sampai status
-        $sheet->getStyle('A:J')->getAlignment()->setVertical('top');
-        $sheet->getStyle('A1:J1')->getFont()->setBold(true);
+        // GESER ABJAD STYLING KARENA KOLOM BERTAMBAH MENJADI K
+        // Kita juga tambahkan kolom K ke dalam WrapText agar link drive tidak memanjang ke samping
+        $sheet->getStyle('F:K')->getAlignment()->setWrapText(true); 
+        $sheet->getStyle('A:K')->getAlignment()->setVertical('top');
+        $sheet->getStyle('A1:K1')->getFont()->setBold(true);
         $sheet->getDefaultRowDimension()->setRowHeight(-1);
     }
 

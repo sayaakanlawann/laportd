@@ -16,6 +16,7 @@ return new class extends Migration
             $table->json('petugas_transmisi')->nullable(); // Ganti dari string ke json
             
             // Kolom foto/evidence dibolehkan kosong (nullable)
+            $table->json('evidence_sebelum_siaran')->nullable();
             $table->string('evidence_hidupkan_peralatan')->nullable();
             $table->string('evidence_cek_jaringan')->nullable();
             $table->string('evidence_jalur_audio_video')->nullable();

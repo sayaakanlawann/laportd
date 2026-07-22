@@ -22,7 +22,12 @@ class LaporanUtama extends Model
     // Beri tahu Laravel untuk otomatis mengubah JSON menjadi Array saat dibaca
     protected $casts = [
         'evidence' => 'array',
-        'tx_petugas_nama' => 'array', 
+        'tx_petugas_nama' => 'array',
+        'evidence_sebelum_siaran' => 'array',
+        'ev_alat_studio' => 'array',
+        'ev_jaringan' => 'array',
+        'ev_jalur_av' => 'array',
+        'pra_ev_kendala' => 'array', 
     ];
     
     public function siarans()

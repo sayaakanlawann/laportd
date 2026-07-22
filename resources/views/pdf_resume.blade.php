@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Resume Laporan TD Sore</title>
+    <title>Resume Laporan TD {{ ucfirst($laporan->shift ?? 'Sore') }}</title>
     <style>
         body { font-family: sans-serif; font-size: 12px; color: #333; }
         .header { text-align: center; border-bottom: 2px solid #000; margin-bottom: 20px; padding-bottom: 10px; }
-        .title { font-size: 16px; font-weight: bold; margin-bottom: 5px; }
+        .title { font-size: 16px; font-weight: bold; margin-bottom: 5px; text-transform: uppercase; }
         table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
         table, th, td { border: 1px solid #ddd; }
         th, td { padding: 8px; text-align: left; }
@@ -20,7 +20,8 @@
 <body>
 
     <div class="header">
-        <div class="title">RESUME LAPORAN TD SORE - TVRI KALSEL</div>
+        <!-- Judul Dinamis mengikuti Shift -->
+        <div class="title">RESUME LAPORAN TD {{ strtoupper($laporan->shift ?? 'SORE') }} - TVRI KALSEL</div>
         <div>Tanggal Laporan: {{ \Carbon\Carbon::parse($laporan->tanggal_tugas)->format('d F Y') }}</div>
     </div>
 
@@ -28,7 +29,13 @@
     <table>
         <tr><th>Nama Technical Director</th><td>{{ $laporan->nama_petugas }}</td></tr>
         <tr><th>Petugas PDU</th><td>{{ $laporan->pdu_nama }}</td></tr>
-        <tr><th>Petugas Transmisi</th><td>{{ $laporan->tx_petugas_nama }}</td></tr>
+        <!-- Memecah array TX menjadi teks yang dipisahkan koma -->
+        <tr>
+            <th>Petugas Transmisi</th>
+            <td>
+                {{ is_array($laporan->tx_petugas_nama) ? implode(', ', $laporan->tx_petugas_nama) : $laporan->tx_petugas_nama }}
+            </td>
+        </tr>
         <tr><th>Status Kehadiran Kru</th><td>{{ $laporan->kru_lengkap ? 'Lengkap' : 'Tidak Lengkap' }}</td></tr>
         <tr><th>Kendala Pra-Siaran</th><td>{{ $laporan->pra_kendala ? 'Ada Kendala' : 'Aman' }}</td></tr>
         @if($laporan->pra_kendala)
@@ -77,6 +84,7 @@
         @if(is_array($laporan->evidence) && count($laporan->evidence) > 0)
             @foreach($laporan->evidence as $ev)
                 <div class="evidence-box">
+                    <!-- Keterangan akan otomatis memuat "(Gambar 1)", "(Gambar 2)" dari Controller -->
                     <strong>{{ $ev['keterangan'] }}</strong><br>
                     <span style="font-size: 10px; color: #666;">File: {{ $ev['filename'] }}</span><br>
                     
