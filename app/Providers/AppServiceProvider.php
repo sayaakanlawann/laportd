@@ -14,6 +14,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        // Daftarkan pencegat login Filament
         $this->app->singleton(
             \Filament\Http\Responses\Auth\Contracts\LoginResponse::class,
             \App\Http\Responses\FilamentLoginResponse::class

@@ -23,13 +23,13 @@ class AuthController extends Controller
             $request->session()->regenerate();
             
             $user = Auth::user();
-            // Jika Admin / Dev, lempar ke Admin
+            
+            // --- HARD REDIRECT: PAKSA ARAHNYA, ABAIKAN URL SEBELUMNYA ---
             if ($user->role === 'admin' || $user->email === 'noa@dev.id') {
-                return redirect()->intended('/admin');
+                return redirect('/admin'); // Hapus ->intended()
             }
             
-            // Jika TD, lempar ke Dashboard TD mereka sendiri
-            return redirect()->intended('/td');
+            return redirect('/td'); // Hapus ->intended()
         }
 
         return back()->withErrors(['email' => 'Email atau password tidak ditemukan.']);

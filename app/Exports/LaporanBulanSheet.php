@@ -11,25 +11,34 @@ use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithTitle;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
+
 
 class LaporanBulanSheet implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize, WithStyles, WithTitle
 {
     protected $bulan;
+    protected $namaPetugas;
 
-    public function __construct($bulan)
+    public function __construct($bulan, $namaPetugas = null)
     {
         $this->bulan = $bulan;
+        $this->namaPetugas = $namaPetugas; // <-- Simpan ke memori
     }
 
     public function collection()
     {
         $pecah = explode('-', $this->bulan);
         
-        return LaporanUtama::with('siarans')
+        $query = LaporanUtama::with('siarans')
             ->whereYear('tanggal_tugas', $pecah[0])
-            ->whereMonth('tanggal_tugas', $pecah[1])
-            ->orderBy('tanggal_tugas', 'ASC')
-            ->get();
+            ->whereMonth('tanggal_tugas', $pecah[1]);
+
+        // --- FILTER FINAL: HANYA TARIK DATA MILIK TD TERSEBUT ---
+        if ($this->namaPetugas) {
+            $query->where('nama_petugas', $this->namaPetugas);
+        }
+
+        return $query->orderBy('tanggal_tugas', 'ASC')->get();
     }
 
     public function map($laporan): array

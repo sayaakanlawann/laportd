@@ -32,18 +32,17 @@ class User extends Authenticatable implements FilamentUser
         ];
     }
 
-    public function canAccessPanel(Panel $panel): bool
+    public function canAccessPanel(\Filament\Panel $panel): bool
     {
-        // Tentukan siapa Admin/Dev
-        $isAdminOrDev = $this->role === 'admin' || $this->email === 'noa@dev.id';
-
-        // 1. Pintu /admin: HANYA untuk Admin dan Dev (Noa)
+        // 1. PINTU LOBI UTAMA (/admin): Biarkan SEMUA USER lolos di pintu depan ini
+        // (Nanti TD yang nyasar akan ditangkap oleh Middleware Satpam di Langkah 3)
         if ($panel->getId() === 'admin') {
-            return $isAdminOrDev;
+            return true; 
         }
 
-        // 2. Pintu /td: HANYA untuk user TD biasa
+        // 2. PINTU /td: Tetap kunci HANYA untuk TD biasa
         if ($panel->getId() === 'td') {
+            $isAdminOrDev = $this->role === 'admin' || $this->email === 'noa@dev.id';
             return !$isAdminOrDev; 
         }
 

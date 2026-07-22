@@ -10,6 +10,7 @@ use App\Models\Petugas;
 use App\Models\ProgramSiaran;
 use App\Exports\LaporanExport;
 use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Facades\Auth;
 
 class EvidenceController extends Controller
 {
@@ -200,16 +201,26 @@ class EvidenceController extends Controller
     // GENERATOR EXCEL REKAP
     public function exportExcel(Request $request)
     {
+        $user = \Illuminate\Support\Facades\Auth::user();
+        
+        // Siapkan variabel nama petugas (Jika Admin/Dev, biarkan null)
+        $namaPetugas = null;
+        if ($user->role !== 'admin' && $user->email !== 'noa@dev.id') {
+            $namaPetugas = $user->name;
+        }
+
         // Cek apakah mode Export All ditekan
         if ($request->has('export_all')) {
             $namaFile = 'Rekap_TD_Semua_Bulan_' . date('Ymd') . '.xlsx';
-            return Excel::download(new LaporanExport('all'), $namaFile);
+            // Suntikkan $namaPetugas ke parameter kedua
+            return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\LaporanExport('all', $namaPetugas), $namaFile);
         } 
         
         // Jika hanya 1 bulan
         $bulan = $request->bulan; 
         $namaFile = 'Rekap_TD_' . $bulan . '.xlsx';
-        return Excel::download(new LaporanExport($bulan), $namaFile);
+        // Suntikkan $namaPetugas ke parameter kedua
+        return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\LaporanExport($bulan, $namaPetugas), $namaFile);
     }
 
     // MENAMPILKAN FORM EDIT DENGAN DATA LAMA

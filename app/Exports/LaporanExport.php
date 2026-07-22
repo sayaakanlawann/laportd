@@ -9,10 +9,13 @@ use Carbon\Carbon;
 class LaporanExport implements WithMultipleSheets
 {
     protected $mode;
+    protected $namaPetugas; // <-- Tambahkan properti penampung
 
-    public function __construct($mode)
+    // <-- Terima parameter kedua
+    public function __construct($mode, $namaPetugas = null) 
     {
-        $this->mode = $mode; // Bisa berisi "2026-07" atau "all"
+        $this->mode = $mode; 
+        $this->namaPetugas = $namaPetugas; // <-- Simpan ke memori
     }
 
     public function sheets(): array
@@ -20,22 +23,28 @@ class LaporanExport implements WithMultipleSheets
         $sheets = [];
 
         if ($this->mode === 'all') {
-            // Jika mode "all", cari semua bulan yang ada datanya di tabel laporan
-            $listBulan = LaporanUtama::select('tanggal_tugas')
-                ->get()
+            // Bangun query untuk mencari bulan
+            $query = LaporanUtama::select('tanggal_tugas');
+
+            // --- FILTER: HANYA CARI BULAN DI MANA TD INI BERTUGAS ---
+            if ($this->namaPetugas) {
+                $query->where('nama_petugas', $this->namaPetugas);
+            }
+
+            $listBulan = $query->get()
                 ->map(function ($item) {
                     return Carbon::parse($item->tanggal_tugas)->format('Y-m');
                 })
                 ->unique()
-                ->sortDesc(); // Urutkan dari bulan terbaru
+                ->sortDesc(); 
 
-            // Looping dan buatkan Sheet untuk setiap bulan yang ditemukan
             foreach ($listBulan as $bulan) {
-                $sheets[] = new LaporanBulanSheet($bulan);
+                // <-- Lempar lagi nama petugas ke pembuat Sheet
+                $sheets[] = new LaporanBulanSheet($bulan, $this->namaPetugas);
             }
         } else {
-            // Jika hanya pilih 1 bulan spesifik, buat 1 sheet saja
-            $sheets[] = new LaporanBulanSheet($this->mode);
+            // <-- Lempar lagi nama petugas ke pembuat Sheet
+            $sheets[] = new LaporanBulanSheet($this->mode, $this->namaPetugas);
         }
 
         return $sheets;

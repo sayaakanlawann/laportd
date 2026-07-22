@@ -29,7 +29,7 @@ class TdPanelProvider extends PanelProvider
             ->default()
             ->id('td')
             ->path('td')
-            ->login()
+            
             ->brandName('TD Report - TVRI Kalsel') // <--- Tambah nama aplikasi
             ->defaultThemeMode(ThemeMode::Dark)    // <--- Paksa mode gelap
             ->colors([

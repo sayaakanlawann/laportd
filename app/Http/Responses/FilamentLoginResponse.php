@@ -12,10 +12,11 @@ class FilamentLoginResponse implements LoginResponse
     {
         $user = auth()->user();
         
+        // --- HARD REDIRECT UNTUK LOGIN FILAMENT ---
         if ($user->role === 'admin' || $user->email === 'noa@dev.id') {
             return redirect()->to('/admin');
         }
         
-        return redirect()->to('/td'); // Tendang TD nyasar ke sini!
+        return redirect()->to('/td'); 
     }
 }

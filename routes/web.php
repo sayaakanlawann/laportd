@@ -70,6 +70,11 @@ Route::get('/debug-upload', function () {
         return "ERROR GOOGLE LANGSUNG: " . $e->getMessage();
     }
 });
+// --- PINTU LOGIN UNIVERSAL ---
+// Memaksa siapa pun yang mengakses /login portal untuk masuk ke login Filament
+Route::get('/login', function () {
+    return redirect('/admin/login');
+})->name('login');
 // --- RUTE PUBLIK (LOBI & LOGIN) ---
 Route::get('/', function () { return view('portal'); });
 Route::get('/login', [AuthController::class, 'loginForm'])->name('login');
