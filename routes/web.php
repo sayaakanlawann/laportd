@@ -76,7 +76,9 @@ Route::get('/login', function () {
     return redirect('/admin/login');
 })->name('login');
 // --- RUTE PUBLIK (LOBI & LOGIN) ---
-Route::get('/', function () { return view('portal'); });
+Route::get('/', function () {
+    return redirect('/admin/login');
+});
 Route::get('/login', [AuthController::class, 'loginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');

@@ -1,6 +1,5 @@
 <x-filament-panels::page>
     <style>
-        /* Desain khusus untuk kartu di dalam Filament */
         .portal-container {
             max-width: 900px;
             margin: 0 auto;
