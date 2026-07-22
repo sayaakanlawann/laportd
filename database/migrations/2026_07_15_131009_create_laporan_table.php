@@ -13,7 +13,7 @@ return new class extends Migration
             $table->date('tanggal');
             $table->string('nama_petugas');
             $table->string('nama_pdu');
-            $table->string('nama_petugas_transmisi');
+            $table->json('petugas_transmisi')->nullable(); // Ganti dari string ke json
             
             // Kolom foto/evidence dibolehkan kosong (nullable)
             $table->string('evidence_hidupkan_peralatan')->nullable();

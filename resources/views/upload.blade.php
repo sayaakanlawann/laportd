@@ -45,33 +45,49 @@
                             <label class="form-label">Tanggal Tugas</label>
                             <input type="date" name="tanggal_tugas" class="form-control" required>
                         </div>
-                        <label class="form-label text-muted small">Nama Petugas (TD)</label>
-                        <select name="nama_petugas" class="form-select bg-dark text-white border-secondary" required>
-                            <option value="">-- Pilih TD --</option>
-                            <!-- Ubah $petugas menjadi $td -->
-                            @foreach($td as $p)
-                                <option value="{{ $p->nama }}">{{ $p->nama }}</option>
-                            @endforeach
-                        </select>
+                        
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label text-muted small">Nama Petugas (TD)</label>
+                            <select name="nama_petugas" class="form-select bg-dark text-white border-secondary" required>
+                                <option value="">-- Pilih TD --</option>
+                                @foreach($td as $p)
+                                    <option value="{{ $p->nama }}">{{ $p->nama }}</option>
+                                @endforeach
+                            </select>
+                        </div>
 
-                        <!-- Lakukan hal yang sama untuk PDU -->
-                        <label class="form-label text-muted small">Petugas PDU</label>
-                        <select name="pdu_nama" class="form-select bg-dark text-white border-secondary" required>
-                            <option value="">-- Pilih PDU --</option>
-                            <!-- Ubah $petugas menjadi $pdu -->
-                            @foreach($pdu as $p)
-                                <option value="{{ $p->nama }}">{{ $p->nama }}</option>
-                            @endforeach
-                        </select>
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label text-muted small">Petugas PDU</label>
+                            <select name="pdu_nama" class="form-select bg-dark text-white border-secondary" required>
+                                <option value="">-- Pilih PDU --</option>
+                                @foreach($pdu as $p)
+                                    <option value="{{ $p->nama }}">{{ $p->nama }}</option>
+                                @endforeach
+                            </select>
+                        </div>
 
-                        <label class="form-label text-muted small">Petugas TX</label>
-                        <select name="tx_petugas_nama" class="form-select bg-dark text-white border-secondary" required>
-                            <option value="">-- Pilih TX --</option>
-                            <!-- Ubah $petugas menjadi $tx -->
-                            @foreach($tx as $p)
-                                <option value="{{ $p->nama }}">{{ $p->nama }}</option>
-                            @endforeach
-                        </select>
+                        <!-- BLOK PETUGAS TX REPEATER -->
+                        <div class="col-md-12 mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="form-label text-muted small mb-0">Petugas TX (Transmisi)</label>
+                                <button type="button" class="btn btn-sm btn-info fw-bold" id="btn-tambah-tx" style="padding: 2px 10px; font-size: 0.75rem;">
+                                    + Tambah TX
+                                </button>
+                            </div>
+                            
+                            <div id="tx-container">
+                                <div class="tx-item d-flex mb-2">
+                                    <select name="tx_petugas_nama[]" class="form-select bg-dark text-white border-secondary" required>
+                                        <option value="">-- Pilih TX --</option>
+                                        @foreach($tx as $p)
+                                            <option value="{{ $p->nama }}">{{ $p->nama }}</option>
+                                        @endforeach
+                                    </select>
+                                    <div style="width: 38px; margin-left: 8px;"></div> 
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="col-md-12 mb-3">
                             <label class="form-label">Kehadiran Kru</label>
                             <select name="kru_lengkap" class="form-select" required>
@@ -244,7 +260,13 @@
         document.addEventListener('DOMContentLoaded', function() {
             const container = document.getElementById('siaran-container');
             const btnTambah = document.getElementById('btn-tambah-siaran');
+            
+            
 
+            // Aksi ketika tombol "+ Tambah TX" diklik
+            
+
+            
             // Template HTML untuk baris baru (SUDAH BERSIH DARI $programs)
             const templateSiaran = `
                 <div class="siaran-item bg-secondary bg-opacity-10 border border-secondary border-opacity-25 p-3 rounded mb-3 position-relative">
@@ -324,6 +346,45 @@
             container.addEventListener('click', function(e) {
                 if(e.target.classList.contains('btn-hapus-siaran')) {
                     e.target.closest('.siaran-item').remove();
+                }
+            });
+            // ====================================================
+            // LOGIKA REPEATER PETUGAS TX (TRANSMISI)
+            // ====================================================
+            const txContainer = document.getElementById('tx-container');
+            // ====================================================
+            // LOGIKA REPEATER PETUGAS TX (TRANSMISI)
+            // ====================================================
+            
+            const btnTambahTx = document.getElementById('btn-tambah-tx');
+
+            // Kita render daftar option TX dari PHP ke Javascript dengan aman
+            const txOptions = `
+                <option value="">-- Pilih TX --</option>
+                @foreach($tx as $p)
+                    <option value="{{ $p->nama }}">{{ $p->nama }}</option>
+                @endforeach
+            `;
+
+            // Template HTML dinamis
+            const templateTx = `
+                <div class="tx-item d-flex mb-2">
+                    <select name="tx_petugas_nama[]" class="form-select bg-dark text-white border-secondary" required>
+                        ${txOptions}
+                    </select>
+                    <button type="button" class="btn btn-outline-danger ms-2 btn-hapus-tx" style="padding: 4px 10px;" title="Hapus Petugas">✕</button>
+                </div>
+            `;
+
+            // Aksi saat klik Tambah
+            btnTambahTx.addEventListener('click', function() {
+                txContainer.insertAdjacentHTML('beforeend', templateTx);
+            });
+
+            // Aksi saat klik Hapus (X)
+            txContainer.addEventListener('click', function(e) {
+                if(e.target.classList.contains('btn-hapus-tx')) {
+                    e.target.closest('.tx-item').remove();
                 }
             });
         });

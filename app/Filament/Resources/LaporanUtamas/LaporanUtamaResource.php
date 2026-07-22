@@ -69,6 +69,7 @@ class LaporanUtamaResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('tx_petugas_nama')
                     ->label('TX')
+                    
                     ->toggleable(isToggledHiddenByDefault: true),
                 // --- PERBAIKAN LOG SIARAN (MENAMPILKAN JAM, PROGRAM, STATUS & CATATAN) ---
                 Tables\Columns\TextColumn::make('log_siaran_lengkap')

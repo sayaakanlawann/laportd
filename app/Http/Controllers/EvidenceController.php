@@ -62,7 +62,7 @@ class EvidenceController extends Controller
             'tanggal_tugas'     => 'required|date',
             'nama_petugas'      => 'required',
             'pdu_nama'          => 'required',
-            'tx_petugas_nama'   => 'required',
+            'tx_petugas_nama'   => 'required|array',
             'pra_kendala'       => 'required',
             'kru_lengkap'       => 'required',
             'kesimpulan'        => 'required',

@@ -21,7 +21,8 @@ class LaporanUtama extends Model
 
     // Beri tahu Laravel untuk otomatis mengubah JSON menjadi Array saat dibaca
     protected $casts = [
-        'evidence' => 'array', 
+        'evidence' => 'array',
+        'tx_petugas_nama' => 'array', 
     ];
     
     public function siarans()

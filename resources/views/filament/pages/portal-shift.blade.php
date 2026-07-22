@@ -7,8 +7,8 @@
         }
         
         .shift-card { 
-            background-color: #1e293b; 
-            border: 1px solid #334155; 
+            background-color: #111214; 
+            border: 1px solid #1c1f22; 
             border-radius: 20px; 
             padding: 3rem 2rem; 
             text-align: center; 

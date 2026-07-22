@@ -1,7 +1,7 @@
 <x-filament-widgets::widget>
     <style>
         .shift-card { 
-            background-color: #1e293b; border: 1px solid #334155; border-radius: 20px; 
+            background-color: #15181c; border: 1px solid #202122; border-radius: 20px; 
             padding: 2rem; text-align: center; transition: all 0.3s ease; 
             text-decoration: none; display: block; cursor: pointer; color: inherit;
         }
