@@ -19,7 +19,21 @@
 </head>
 <body>
 
-    <div class="header">
+    <div class="header" style="position: relative; text-align: center;">
+        <!-- LOGO TVRI DI POJOK KIRI PDF -->
+        @php
+            $logoPath = public_path('logo-tvri.png');
+            $logoBase64 = '';
+            if(file_exists($logoPath)) {
+                $logoData = file_get_contents($logoPath);
+                // Karena SVG adalah text/xml, kita encode ke base64 dengan mime type yang sesuai
+                $logoBase64 = 'data:image/png+xml;base64,' . base64_encode($logoData);
+            }
+        @endphp
+
+        @if($logoBase64)
+            <img src="{{ $logoBase64 }}" style="position: absolute; left: 0; top: 0; height: 40px; width: auto;" alt="Logo TVRI">
+        @endif
         <!-- Judul Dinamis mengikuti Shift -->
         <div class="title">RESUME LAPORAN TD {{ strtoupper($laporan->shift ?? 'SORE') }} - TVRI KALSEL</div>
         <div>Tanggal Laporan: {{ \Carbon\Carbon::parse($laporan->tanggal_tugas)->format('d F Y') }}</div>

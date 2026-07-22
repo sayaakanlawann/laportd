@@ -30,6 +30,9 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
+            ->brandLogo(asset('logo-tvri.png'))
+            ->favicon(asset('logo-tvri.png')) // Ganti dengan nama file SVG Abang di public
+            ->brandLogoHeight('3rem')
             ->brandName('TD Report - TVRI Kalsel') // <--- Tambah nama aplikasi
             ->defaultThemeMode(ThemeMode::Dark)    // <--- Paksa mode gelap
             ->colors([
