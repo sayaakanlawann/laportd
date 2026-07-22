@@ -6,7 +6,7 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Storage;
 use League\Flysystem\Filesystem;
 use Masbug\Flysystem\GoogleDriveAdapter;
-
+use Illuminate\Support\Facades\URL;
 class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -49,5 +49,8 @@ class AppServiceProvider extends ServiceProvider
                 $config
             );
         });
+        if (str_contains(request()->getHost(), 'ngrok')) {
+            URL::forceScheme('https');
+        }
     }
 }
