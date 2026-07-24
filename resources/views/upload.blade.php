@@ -239,7 +239,7 @@
                     <div class="row mb-4">
                         <div class="col-md-12 mb-3">
                             <label class="form-label">Kesimpulan Akhir</label>
-                            <textarea name="kesimpulan" class="form-control" rows="4" required placeholder="Tuliskan kesimpulan siaran sore ini..."></textarea>
+                            <textarea name="kesimpulan" class="form-control" rows="4" required placeholder="Kesimpulan"></textarea>
                         </div>
                     </div>
 

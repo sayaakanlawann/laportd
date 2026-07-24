@@ -24,37 +24,37 @@ class JadwalAcaraBaruSeeder extends Seeder
             // ==========================================
             // SHIFT PAGI
             // ==========================================
-            '09:00|10.00' => ['Habar Banua', 'Kalimantan Selatan Hari ini', 'iYoga'],
+            '09:00|10:00' => ['Habar Banua', 'Kalimantan Selatan Hari ini', 'iYoga'],
             '09:00|09:30' => ['Cerdas Ceria'],
-            '09:30|10.00' => ['Bakunjang'],
+            '09:30|10:00' => ['Bakunjang'],
             
-            '10:00|11.00' => ['Ini Borneo', 'Jejak Langkah'],
+            '10:00|11:00' => ['Ini Borneo', 'Jejak Langkah'],
             '10:00|10:30' => ['Sekolah Ku Keren'],
-            '10:30|11.00' => ['Lensa Olahraga', 'Oto Screen'],
+            '10:30|11:00' => ['Lensa Olahraga', 'Oto Screen'],
             
-            '11:00|12.00' => ['Ini Borneo', 'Binian'],
+            '11:00|12:00' => ['Ini Borneo', 'Binian'],
             '11:00|11:30' => ['Dapur Davina'],
-            '11:30|12.00' => ['Inspirasi Indonesia - Nusantara / Borneo GTC'],
+            '11:30|12:00' => ['Inspirasi Indonesia - Nusantara / Borneo GTC'],
 
             // ==========================================
             // SHIFT SORE
             // ==========================================
-            '15:00|16.00' => ['Perspektif', 'Hidup Sehat', 'Ngopi', 'Cahaya Qolbu', 'Binian'],
+            '15:00|16:00' => ['Perspektif', 'Hidup Sehat', 'Ngopi', 'Cahaya Qolbu', 'Binian'],
             '15:00|15:30' => ['Remaja Hebat', 'Sinema Banua'],
-            '15:30|16.00' => ['Warung Bubuhan', 'Ayo Ke Museum'],
+            '15:30|16:00' => ['Warung Bubuhan', 'Ayo Ke Museum'],
             
-            '16:00|17.00' => [
+            '16:00|17:00' => [
                 'Pengen Beken', 'Music Off The Record', 'Dangdut Keliling', 
                 'Hari Yang Berkah', 'Siroh Protestan', 'Siroh Hindu', 
                 'Siroh Katolik', 'Siroh Buddha', 'Siroh Konghuchu'
             ],
             '16:00|16:30' => ['Sekolah Ku Keren', 'Remaja Hebat', 'Inspirasi Tani / Dinamika', 'Kindai Limpuar / Dinamika', 'Cerdas Ceria'],
-            '16:30|17.00' => ['Bakunjang', 'Lensa Olahraga', 'Oto Screen'],
+            '16:30|17:00' => ['Bakunjang', 'Lensa Olahraga', 'Oto Screen'],
             
-            '17:00|18.00' => ['Kalimantan Selatan Hari Ini', 'Habar Banua'],
+            '17:00|18:00' => ['Kalimantan Selatan Hari Ini', 'Habar Banua'],
             
             '18:00|18:30' => ['Kajian Tauhid', 'Fiqih Wanita', 'Mutiara Hadis'],
-            '18:30|19.00' => [
+            '18:30|19:00' => [
                 'Inspirasi Indonesia Kalsel', 'Pesona Indonesia Kalsel', 
                 'Jejak Islam', 'Anak Indonesia', 'Pesona Indonesia - Nusantara', 'PKS Antara'
             ],
