@@ -15,7 +15,7 @@ class ListLaporanUtamas extends ListRecords
         return [
             CreateAction::make()
                 // Membajak klik tombol agar pindah ke route /upload buatan Abang
-                ->url('/upload')
+            
                 // (Opsional) Abang juga bisa merapikan namanya sekalian
                 ->label('+ Buat Laporan Baru'), 
         ];

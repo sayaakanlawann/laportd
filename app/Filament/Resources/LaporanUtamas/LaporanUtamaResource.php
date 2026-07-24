@@ -219,8 +219,8 @@ class LaporanUtamaResource extends Resource
     {
         return [
             'index' => ListLaporanUtamas::route('/'),
-            // 'create' => CreateLaporanUtama::route('/create'),
-            // 'edit' => EditLaporanUtama::route('/{record}/edit'),
+            'create' => CreateLaporanUtama::route('/create'),
+            'edit' => EditLaporanUtama::route('/{record}/edit'),
         ];
     }
 }
