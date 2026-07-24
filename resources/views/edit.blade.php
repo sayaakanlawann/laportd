@@ -22,7 +22,7 @@
 <body>
 
     <div class="container mt-5 mb-5">
-        <a href="/evidence" class="btn btn-outline-secondary mb-3">← Kembali ke Dashboard</a>
+        <a href="/" class="btn btn-outline-secondary mb-3">← Kembali ke Dashboard</a>
         <div class="card">
             <div class="card-header">
                 <h5 class="mb-0 text-white fw-bold">Edit Laporan Induk TD</h5>
@@ -81,20 +81,25 @@
 
                     <div class="section-title">Evidence Rutin (Opsional Jika Tidak Diubah)</div>
                     <div class="row mb-4">
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Alat Studio & Master</label>
-                            <input type="file" name="ev_alat_studio" class="form-control mb-1">
-                            <small class="text-warning">Kosongkan jika tidak ingin mengubah file.</small>
+                        <!-- Input Baru: Evidence Sebelum Siaran -->
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Evidence Sebelum Siaran <br><small class="text-warning">(Maks 2 Gambar)</small></label>
+                            <input type="file" name="evidence_sebelum_siaran[]" class="form-control evidence-upload" accept="image/*" multiple>
                         </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Pengecekan Jaringan</label>
-                            <input type="file" name="ev_jaringan" class="form-control mb-1">
-                            <small class="text-warning">Kosongkan jika tidak ingin mengubah file.</small>
+                        
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Alat Studio & Master <br><small class="text-warning">(Maks 2 Gambar)</small></label>
+                            <input type="file" name="ev_alat_studio[]" class="form-control evidence-upload" accept="image/*" multiple>
                         </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Jalur Audio & Video</label>
-                            <input type="file" name="ev_jalur_av" class="form-control mb-1">
-                            <small class="text-warning">Kosongkan jika tidak ingin mengubah file.</small>
+                        
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Pengecekan Jaringan <br><small class="text-warning">(Maks 2 Gambar)</small></label>
+                            <input type="file" name="ev_jaringan[]" class="form-control evidence-upload" accept="image/*" multiple>
+                        </div>
+                        
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Jalur Audio & Video <br><small class="text-warning">(Maks 2 Gambar)</small></label>
+                            <input type="file" name="ev_jalur_av[]" class="form-control evidence-upload" accept="image/*" multiple>
                         </div>
                     </div>
 

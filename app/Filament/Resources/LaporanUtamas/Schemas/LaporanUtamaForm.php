@@ -8,6 +8,7 @@ use App\Models\Petugas;
 use App\Models\ProgramSiaran;
 use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Group;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\FileUpload;
@@ -36,6 +37,14 @@ class LaporanUtamaForm
                     // ------------------------------------------
                     Fieldset::make('Data Personil & Waktu')
                         ->schema([
+                            Select::make('shift')
+                            ->label('Shift Tugas')
+                            ->options([
+                                'pagi' => 'Pagi',
+                                'sore' => 'Sore',
+                            ])
+                            ->required()
+                            ->columnSpanFull(),
                             DatePicker::make('tanggal_tugas')
                                 ->label('Tanggal Tugas')
                                 ->default(now())
@@ -66,18 +75,26 @@ class LaporanUtamaForm
                                 ->columnSpanFull(),
 
                             Repeater::make('tx_petugas_nama')
-                                ->label('Petugas TX (Transmisi)')
-                                ->schema([
-                                    Select::make('nama')
-                                        ->options(
-                                            Petugas::where('is_aktif', true)
-                                                ->where('jabatan_utama', 'Transmisi')
-                                                ->pluck('nama', 'nama')
-                                        )
-                                        ->required(),
-                                ])
-                                ->addActionLabel('+ Tambah TX')
-                                ->columnSpanFull(),
+                            ->label('Petugas TX (Transmisi)')
+                            ->schema([
+                                Select::make('nama')
+                                    ->options(
+                                        Petugas::where('is_aktif', true)
+                                            ->where('jabatan_utama', 'Transmisi')
+                                            ->pluck('nama', 'nama')
+                                    )
+                                    ->required(),
+                            ])
+                            // KUNCI PENYELAMAT: Mengubah format objek [{"nama": "Budi"}] menjadi array teks datar ["Budi"]
+                            ->dehydrateStateUsing(function ($state) {
+                                if (is_array($state)) {
+                                    // Ambil nilai dari key 'nama' di setiap baris repeater lalu ratakan
+                                    return collect($state)->pluck('nama')->filter()->values()->toArray();
+                                }
+                                return $state;
+                            })
+                            ->addActionLabel('+ Tambah TX')
+                            ->columnSpanFull(),
                         ]),
 
                     // ------------------------------------------
@@ -87,24 +104,35 @@ class LaporanUtamaForm
                         ->schema([
                             FileUpload::make('evidence_sebelum_siaran')
                                 ->label('Sebelum Siaran')
+                                ->disk('public')
+                                ->directory('evidence')
                                 ->image()->multiple()->maxFiles(2)->maxSize(10240)->directory('evidence')->required(),
                                 
                             FileUpload::make('ev_alat_studio')
                                 ->label('Alat & Master')
+                                ->disk('public')
+                                ->directory('evidence')
                                 ->image()->multiple()->maxFiles(2)->maxSize(10240)->directory('evidence')->required(),
 
                             FileUpload::make('ev_jaringan')
                                 ->label('Jaringan')
+                                ->disk('public')
+                                ->directory('evidence')
                                 ->image()->multiple()->maxFiles(2)->maxSize(10240)->directory('evidence')->required(),
 
                             FileUpload::make('ev_jalur_av')
                                 ->label('Jalur AV')
+                                ->disk('public')
+                                ->directory('evidence')
                                 ->image()->multiple()->maxFiles(2)->maxSize(10240)->directory('evidence')->required(),
                         ])->columns(2), // Berjajar rapi 2x2 di sebelah kanan
 
                     // ------------------------------------------
                     // KOLOM 2 (KANAN, ROW 2): KENDALA PRA-SIARAN
                     // Otomatis mengisi ruang kosong di bawah Evidence
+                    // ------------------------------------------
+                   // ------------------------------------------
+                    // KOLOM 2 (KANAN, ROW 2): KENDALA PRA-SIARAN
                     // ------------------------------------------
                     Fieldset::make('Status Kendala Pra-Siaran')
                         ->schema([
@@ -114,6 +142,7 @@ class LaporanUtamaForm
                                     '0' => 'Tidak Ada Kendala',
                                     '1' => 'Ada Kendala',
                                 ])
+                                ->default('0') // Berikan nilai default agar state awal tidak null
                                 ->live() 
                                 ->required()
                                 ->columnSpanFull(),
@@ -121,88 +150,111 @@ class LaporanUtamaForm
                             Textarea::make('pra_ket_kendala')
                                 ->label('Keterangan Kendala')
                                 ->rows(2)
-                                ->visible(fn (Get $get): bool => $get('pra_kendala') === '1')
-                                ->required(fn (Get $get): bool => $get('pra_kendala') === '1')
+                                ->visible(fn (Get $get): bool => $get('pra_kendala') == '1') // Ubah === menjadi ==
+                                ->required(fn (Get $get): bool => $get('pra_kendala') == '1') // Ubah === menjadi ==
                                 ->columnSpanFull(),
                                 
                             FileUpload::make('pra_ev_kendala')
                                 ->label('Evidence Kendala')
+                                ->disk('public')
+                                ->directory('evidence')
                                 ->image()->multiple()->maxFiles(2)->maxSize(10240)->directory('evidence')
-                                ->visible(fn (Get $get): bool => $get('pra_kendala') === '1')
+                                ->visible(fn (Get $get): bool => $get('pra_kendala') == '1') // Ubah === menjadi ==
                                 ->columnSpanFull(),
                         ]),
 
                 // Akhir Grid Atas
 
             // ==========================================
-            // BAGIAN BAWAH: LOG JAM TAYANG (FULL WIDTH)
-            // ==========================================
-            Fieldset::make('Log Jam Tayang Siaran')
-                ->schema([
-                    Repeater::make('siarans')
-                        ->relationship('siarans')
-                        ->label('') 
-                        ->addActionLabel('+ Tambah Program')
-                        ->columnSpanFull() 
-                        ->columns(5) 
-                        ->schema([
-                            Select::make('waktu_siaran')
-                                ->label('Waktu')
-                                ->options(ProgramSiaran::where('is_aktif', true)->pluck('jam_tayang_default', 'jam_tayang_default'))
-                                ->live() 
-                                ->required(),
+                // BAGIAN BAWAH: FULL WIDTH (LOG JAM TAYANG)
+                // ==========================================
+                Fieldset::make('Log Jam Tayang Siaran')
+                    ->schema([
+                        Repeater::make('siarans')
+                            ->relationship('siarans')
+                            ->label('') 
+                            ->addActionLabel('+ Tambah Program')
+                            ->columnSpanFull() 
+                            ->columns(5)
+                            ->schema([
+                                
+                                // 1. Dropdown waktu siaran (Nilai dibiarkan murni, pemecahan dipindah ke dehydrate)
+                                Select::make('jam_tayang')
+                                    ->label('Waktu Siaran')
+                                    ->options(ProgramSiaran::where('is_aktif', true)->pluck('jam_tayang_default', 'jam_tayang_default'))
+                                    ->live() 
+                                    ->required()
+                                    // Memecah format '09:00|09:30' tepat saat data hendak dikirim ke database
+                                    ->dehydrateStateUsing(function ($state) {
+                                        if ($state && str_contains($state, '|')) {
+                                            return trim(explode('|', $state)[0]); // Ambil jam mulai saja untuk kolom jam_tayang
+                                        }
+                                        return $state;
+                                    }),
 
-                            \Filament\Schemas\Components\Group::make()->schema([
-                                Select::make('nama_program')
-                                    ->label('Program')
-                                    ->options(function (Get $get) {
-                                        $waktu = $get('waktu_siaran');
-                                        if (! $waktu) return [];
-                                        
-                                        $opsi = ProgramSiaran::where('jam_tayang_default', $waktu)->pluck('nama_program', 'nama_program')->toArray();
-                                        $opsi['Other'] = 'Lainnya (Ketik Manual)...';
-                                        return $opsi;
-                                    })
-                                    ->live()
+                                // 2. Hidden input untuk jam_selesai, diisi otomatis berdasarkan jam_tayang yang dipilih
+                                \Filament\Forms\Components\Hidden::make('jam_selesai')
+                                    ->dehydrateStateUsing(function ($state, Get $get) {
+                                        $waktu = $get('jam_tayang');
+                                        if ($waktu && str_contains($waktu, '|')) {
+                                            return trim(explode('|', $waktu)[1]); // Ambil jam selesai dari format '|'
+                                        }
+                                        return $state;
+                                    }),
+
+                                Group::make()->schema([
+                                    Select::make('nama_program')
+                                        ->label('Program')
+                                        ->options(function (Get $get) {
+                                            $waktu = $get('jam_tayang'); 
+                                            if (! $waktu) return [];
+                                            
+                                            $jamMulai = str_contains($waktu, '|') ? explode('|', $waktu)[0] : $waktu;
+                                            
+                                            $opsi = ProgramSiaran::where('jam_tayang_default', 'like', "%{$jamMulai}%")->pluck('nama_program', 'nama_program')->toArray();
+                                            $opsi['Other'] = 'Lainnya (Ketik Manual)...';
+                                            return $opsi;
+                                        })
+                                        ->live()
+                                        ->required(),
+
+                                    TextInput::make('nama_program_custom')
+                                        ->label('Ketik Baru')
+                                        ->visible(fn (Get $get): bool => $get('nama_program') === 'Other')
+                                        ->required(fn (Get $get): bool => $get('nama_program') === 'Other'),
+                                ]),
+
+                                Select::make('jenis_acara')
+                                    ->label('Jenis')
+                                    ->options([
+                                        'Live Studio 1' => 'Live Studio 1',
+                                        'Live Studio 2' => 'Live Studio 2',
+                                        'Live Studio 3' => 'Live Studio 3',
+                                        'Relay' => 'Relay',
+                                        'Relay Jakarta' => 'Relay Jakarta',
+                                        'Relay Kalbar' => 'Relay Kalbar',
+                                        'Relay Kaltim' => 'Relay Kaltim',
+                                        'Relay Kalteng' => 'Relay Kalteng',
+                                        'Relay Kaltara' => 'Relay Kaltara',
+                                        'Record' => 'Record',
+                                        'Playback' => 'Playback',
+                                    ])
+                                    ->searchable()
                                     ->required(),
 
-                                TextInput::make('nama_program_custom')
-                                    ->label('Ketik Baru')
-                                    ->visible(fn (Get $get): bool => $get('nama_program') === 'Other')
-                                    ->required(fn (Get $get): bool => $get('nama_program') === 'Other'),
-                            ]),
+                                Select::make('status_siaran')
+                                    ->label('Status')
+                                    ->options([
+                                        'Aman' => 'Aman',
+                                        'Audio' => 'Audio',
+                                        'Video' => 'Video',
+                                    ])
+                                    ->required(),
 
-                            Select::make('jenis_acara')
-                                ->label('Jenis')
-                                ->options([
-                                    'Live Studio 1' => 'Live Studio 1',
-                                    'Live Studio 2' => 'Live Studio 2',
-                                    'Live Studio 3' => 'Live Studio 3',
-                                    'Relay' => 'Relay',
-                                    'Relay Jakarta' => 'Relay Jakarta',
-                                    'Relay Kalbar' => 'Relay Kalbar',
-                                    'Relay Kaltim' => 'Relay Kaltim',
-                                    'Relay Kalteng' => 'Relay Kalteng',
-                                    'Relay Kaltara' => 'Relay Kaltara',
-                                    'Record' => 'Record',
-                                    'Playback' => 'Playback',
-                                ])
-                                ->searchable()
-                                ->required(),
-
-                            Select::make('status_siaran')
-                                ->label('Status')
-                                ->options([
-                                    'Aman' => 'Aman',
-                                    'Audio' => 'Audio',
-                                    'Video' => 'Video',
-                                ])
-                                ->required(),
-
-                            TextInput::make('catatan_kendala')
-                                ->label('Catatan'),
-                        ])
-                ])->columnSpanFull(),
+                                TextInput::make('catatan_kendala')
+                                    ->label('Catatan'),
+                            ])
+                    ])->columnSpanFull(),
 
             // ==========================================
             // BAGIAN BAWAH: FINALISASI (FULL WIDTH)

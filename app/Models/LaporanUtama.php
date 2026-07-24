@@ -17,6 +17,11 @@ class LaporanUtama extends Model
         'kru_lengkap',
         'kesimpulan',
         'evidence', // Tambahkan field ini
+        'evidence_sebelum_siaran',
+        'ev_alat_studio',
+        'ev_jaringan',
+        'ev_jalur_av',
+        'pra_ev_kendala',
     ];
 
     // Beri tahu Laravel untuk otomatis mengubah JSON menjadi Array saat dibaca
