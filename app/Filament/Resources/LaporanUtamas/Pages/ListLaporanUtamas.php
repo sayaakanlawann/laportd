@@ -3,8 +3,9 @@
 namespace App\Filament\Resources\LaporanUtamas\Pages;
 
 use App\Filament\Resources\LaporanUtamas\LaporanUtamaResource;
-use Filament\Actions\CreateAction;
+use Filament\Actions\Action;
 use Filament\Resources\Pages\ListRecords;
+use Filament\Forms\Components\Select;
 
 class ListLaporanUtamas extends ListRecords
 {
@@ -13,11 +14,28 @@ class ListLaporanUtamas extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            CreateAction::make()
-                // Membajak klik tombol agar pindah ke route /upload buatan Abang
-            
-                // (Opsional) Abang juga bisa merapikan namanya sekalian
-                ->label('+ Buat Laporan Baru'), 
+            Action::make('create_with_shift')
+                ->label('+ Buat Laporan Baru')
+                ->color('primary')
+                ->modalHeading('Pilih Shift Laporan')
+                ->modalDescription('Silakan pilih shift tugas terlebih dahulu sebelum mengisi laporan.')
+                ->modalSubmitActionLabel('Lanjutkan ke Form')
+                ->form([
+                    Select::make('shift')
+                        ->label('Shift Tugas')
+                        ->options([
+                            'pagi' => 'Shift Pagi',
+                            'sore' => 'Shift Sore',
+                        ])
+                        ->required()
+                ])
+                ->action(function (array $data) {
+                    // Setelah user pilih shift dan klik submit, arahkan ke halaman create 
+                    // dengan membawa parameter shift di URL (contoh: /laporan-utamas/create?shift=pagi)
+                    return redirect()->route('filament.admin.resources.laporan-utamas.create', [
+                        'shift' => $data['shift']
+                    ]);
+                }),
         ];
     }
 }

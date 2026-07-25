@@ -15,6 +15,8 @@ use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Hidden;
+
 
 class LaporanUtamaForm
 {
@@ -37,14 +39,11 @@ class LaporanUtamaForm
                     // ------------------------------------------
                     Fieldset::make('Data Personil & Waktu')
                         ->schema([
-                            Select::make('shift')
-                            ->label('Shift Tugas')
-                            ->options([
-                                'pagi' => 'Pagi',
-                                'sore' => 'Sore',
-                            ])
-                            ->required()
-                            ->columnSpanFull(),
+                            
+
+// Masukkan di dalam schema form utama (paling atas/posisi bebas):
+Hidden::make('shift')
+    ->required(),
                             DatePicker::make('tanggal_tugas')
                                 ->label('Tanggal Tugas')
                                 ->default(now())
@@ -168,10 +167,31 @@ class LaporanUtamaForm
                             ->columns(5)
                             ->schema([
                                 
-                                // 1. Dropdown waktu siaran (Nilai dibiarkan murni, pemecahan dipindah ke dehydrate)
                                 Select::make('jam_tayang')
     ->label('Waktu Siaran')
-    ->options(ProgramSiaran::where('is_aktif', true)->pluck('jam_tayang_default', 'jam_tayang_default'))
+    ->options(function ($get) {
+        // Ambil shift dari parameter URL halaman (aman saat halaman pertama dibuka)
+        $shiftAktif = request()->query('shift');
+
+        // Jika request URL kosong (misal saat tambah baris repeater via AJAX), 
+        // ambil dari state form utama root menggunakan data_get
+        $shiftAktif = request()->query('shift');
+
+        $query = ProgramSiaran::where('is_aktif', true);
+
+        // Filter ketat berdasarkan shift
+        if ($shiftAktif === 'pagi') {
+            $query->whereTime('jam_tayang_default', '>=', '09:00:00')
+                  ->whereTime('jam_tayang_default', '<=', '12:00:00');
+        } elseif ($shiftAktif === 'sore') {
+            $query->where(function($q) {
+                $q->whereTime('jam_tayang_default', '<', '09:00:00')
+                  ->orWhereTime('jam_tayang_default', '>', '12:00:00');
+            });
+        }
+
+        return $query->pluck('jam_tayang_default', 'jam_tayang_default');
+    })
     ->live() 
     ->required()
     ->afterStateHydrated(function (Select $component, $record) {
@@ -181,29 +201,24 @@ class LaporanUtamaForm
             $component->state("{$jamMulai}|{$jamSelesai}");
         }
     })
-    // Hanya ambil jam mulai (misal: 10:00) untuk disimpan ke kolom jam_tayang
-    ->dehydrateStateUsing(function ($state) {
+    ->dehydrateStateUsing(function ($state, $set) {
         if ($state && str_contains($state, '|')) {
-            return trim(explode('|', $state)[0]);
+            $pecah = explode('|', $state);
+            
+            if (is_callable($set)) {
+                $set('jam_selesai', trim($pecah[1]));
+            }
+
+            return trim($pecah[0]);
         }
         return $state;
-    }),
-
-// KUNCI PENYELAMAT: Ambil jam selesai secara mandiri dari state siaran yang sama
-\Filament\Forms\Components\Hidden::make('jam_selesai')
-    ->dehydrated(true) // Pastikan field ini tetap ikut dikirim ke database
-    ->dehydrateStateUsing(function (Get $get) {
-        $state = $get('jam_tayang'); // Ambil nilai dari dropdown 'jam_tayang'
-        if ($state && str_contains($state, '|')) {
-            return trim(explode('|', $state)[1]); // Ambil jam selesai (misal: 10:30)
-        }
-        return null;
     }),
 
                                 Group::make()->schema([
                                     Select::make('nama_program')
                                         ->label('Program')
-                                        ->options(function (Get $get) {
+                                        // Hapus type hinting (Get $get) menjadi ($get) saja agar aman dari konflik namespace
+                                        ->options(function ($get) {
                                             $waktu = $get('jam_tayang'); 
                                             if (! $waktu) return [];
                                             
@@ -218,8 +233,9 @@ class LaporanUtamaForm
 
                                     TextInput::make('nama_program_custom')
                                         ->label('Ketik Baru')
-                                        ->visible(fn (Get $get): bool => $get('nama_program') === 'Other')
-                                        ->required(fn (Get $get): bool => $get('nama_program') === 'Other'),
+                                        // Ubah juga type hinting di sini untuk jaga-jaga
+                                        ->visible(fn ($get): bool => $get('nama_program') === 'Other')
+                                        ->required(fn ($get): bool => $get('nama_program') === 'Other'),
                                 ]),
 
                                 Select::make('jenis_acara')
