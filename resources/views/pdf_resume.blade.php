@@ -93,18 +93,76 @@
     <div style="page-break-before: always; clear: both; padding-top: 20px;"></div>
 
     <!-- BAGIAN EVIDENCE -->
-    <h3 style="border-bottom: 1px solid #ccc; padding-bottom: 5px;">Rangkuman Bukti Evidence</h3>
-    <div>
-        @if(is_array($laporan->evidence) && count($laporan->evidence) > 0)
-            @foreach($laporan->evidence as $ev)
+    <h3 style="border-bottom: 1px solid #ccc; padding-bottom: 5px; margin-bottom: 15px;">Rangkuman Bukti Evidence</h3>
+
+    @php
+        // Helper untuk merapikan data gambar (baik format array baru maupun string/array lama)
+        $collectImages = function($labelSection, $images) {
+            $results = [];
+            if (empty($images)) return $results;
+
+            if (is_string($images)) {
+                $decoded = json_decode($images, true);
+                $images = is_array($decoded) ? $decoded : [$images];
+            }
+
+            if (is_array($images)) {
+                foreach ($images as $index => $item) {
+                    $path = '';
+                    $caption = '';
+
+                    if (is_array($item)) {
+                        $path = $item['path'] ?? $item['file_id'] ?? reset($item);
+                        $caption = $item['keterangan'] ?? $item['caption'] ?? '';
+                    } else {
+                        $path = $item;
+                    }
+
+                    if (!empty($path) && is_string($path)) {
+                        $imgNum = $index + 1;
+                        $finalCaption = !empty($caption) ? $caption : "Gambar {$imgNum} : {$labelSection}";
+                        $results[] = [
+                            'path' => $path,
+                            'caption' => $finalCaption,
+                            'section' => $labelSection
+                        ];
+                    }
+                }
+            }
+            return $results;
+        };
+
+        // Kumpulkan semua evidence dari berbagai kolom baru dan arsip lama
+        $allEvidences = array_merge(
+            $collectImages('Sebelum Siaran', $laporan->evidence_sebelum_siaran),
+            $collectImages('Alat & Master', $laporan->ev_alat_studio),
+            $collectImages('Jaringan', $laporan->ev_jaringan),
+            $collectImages('Jalur AV', $laporan->ev_jalur_av),
+            $collectImages('Evidence Kendala', $laporan->pra_ev_kendala),
+            $collectImages('Arsip Evidence (Lama)', $laporan->evidence ?? []),
+            $collectImages('Arsip Link (Lama)', $laporan->link_drive ?? [])
+        );
+    @endphp
+
+    @if(count($allEvidences) > 0)
+        <div>
+            @foreach($allEvidences as $ev)
                 <div class="evidence-box">
-                    <!-- Keterangan akan otomatis memuat "(Gambar 1)", "(Gambar 2)" dari Controller -->
-                    <strong>{{ $ev['keterangan'] }}</strong><br>
-                    <span style="font-size: 10px; color: #666;">File: {{ $ev['filename'] }}</span><br>
+                    <!-- Label Keterangan / Kategori -->
+                    <strong>{{ $ev['caption'] }}</strong><br>
+                    <span style="font-size: 9px; color: #666; word-break: break-all;">Path: {{ basename($ev['path']) }}</span><br>
                     
-                    <!-- Rendering Gambar Base64 -->
+                    <!-- Rendering Gambar Base64 untuk DOMPDF -->
                     @php
-                        $imagePath = storage_path('app/public/' . $ev['file_id']);
+                        // Cek apakah path sudah berupa URL mutlak atau path storage lokal
+                        $cleanPath = str_replace(asset('storage/'), '', $ev['path']);
+                        $imagePath = storage_path('app/public/' . $cleanPath);
+                        
+                        // Jika path aslinya adalah URL eksternal/full
+                        if (str_starts_with($ev['path'], 'http')) {
+                            $imagePath = str_replace(url('/storage/'), storage_path('app/public/'), $ev['path']);
+                        }
+
                         $imageData = '';
                         if(file_exists($imagePath)) {
                             $mime = mime_content_type($imagePath);
@@ -116,16 +174,16 @@
                     @if($imageData)
                         <img src="{{ $imageData }}" class="thumb" alt="Thumbnail"><br>
                     @else
-                        <div style="color: red; font-size: 10px; margin: 10px 0;">[Gambar Fisik Tidak Ditemukan]</div><br>
+                        <div style="color: red; font-size: 10px; margin: 15px 0;">[File Gambar Fisik Tidak Ditemukan]</div><br>
                     @endif
 
-                    <a href="{{ $ev['link_drive'] }}" class="link" target="_blank">Buka File Lampiran</a>
+                    <a href="{{ str_starts_with($ev['path'], 'http') ? $ev['path'] : asset('storage/' . $ev['path']) }}" class="link" target="_blank">Buka File Asli</a>
                 </div>
             @endforeach
-        @else
-            <p>Tidak ada evidence yang dilampirkan.</p>
-        @endif
-    </div>
+        </div>
+    @else
+        <p>Tidak ada evidence yang dilampirkan.</p>
+    @endif
 
 </body>
 </html>

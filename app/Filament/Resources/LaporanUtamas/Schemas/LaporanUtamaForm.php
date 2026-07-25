@@ -74,27 +74,17 @@ class LaporanUtamaForm
                                 ->required()
                                 ->columnSpanFull(),
 
-                            Repeater::make('tx_petugas_nama')
-                            ->label('Petugas TX (Transmisi)')
-                            ->schema([
-                                Select::make('nama')
-                                    ->options(
-                                        Petugas::where('is_aktif', true)
-                                            ->where('jabatan_utama', 'Transmisi')
-                                            ->pluck('nama', 'nama')
-                                    )
-                                    ->required(),
-                            ])
-                            // KUNCI PENYELAMAT: Mengubah format objek [{"nama": "Budi"}] menjadi array teks datar ["Budi"]
-                            ->dehydrateStateUsing(function ($state) {
-                                if (is_array($state)) {
-                                    // Ambil nilai dari key 'nama' di setiap baris repeater lalu ratakan
-                                    return collect($state)->pluck('nama')->filter()->values()->toArray();
-                                }
-                                return $state;
-                            })
-                            ->addActionLabel('+ Tambah TX')
-                            ->columnSpanFull(),
+                            Select::make('tx_petugas_nama')
+    ->label('Petugas TX (Transmisi)')
+    ->options(
+        Petugas::where('is_aktif', true)
+            ->where('jabatan_utama', 'Transmisi')
+            ->pluck('nama', 'nama')
+    )
+    ->multiple()
+    ->searchable()
+    ->required()
+    ->columnSpanFull(),
                         ]),
 
                     // ------------------------------------------
@@ -180,27 +170,35 @@ class LaporanUtamaForm
                                 
                                 // 1. Dropdown waktu siaran (Nilai dibiarkan murni, pemecahan dipindah ke dehydrate)
                                 Select::make('jam_tayang')
-                                    ->label('Waktu Siaran')
-                                    ->options(ProgramSiaran::where('is_aktif', true)->pluck('jam_tayang_default', 'jam_tayang_default'))
-                                    ->live() 
-                                    ->required()
-                                    // Memecah format '09:00|09:30' tepat saat data hendak dikirim ke database
-                                    ->dehydrateStateUsing(function ($state) {
-                                        if ($state && str_contains($state, '|')) {
-                                            return trim(explode('|', $state)[0]); // Ambil jam mulai saja untuk kolom jam_tayang
-                                        }
-                                        return $state;
-                                    }),
+    ->label('Waktu Siaran')
+    ->options(ProgramSiaran::where('is_aktif', true)->pluck('jam_tayang_default', 'jam_tayang_default'))
+    ->live() 
+    ->required()
+    ->afterStateHydrated(function (Select $component, $record) {
+        if ($record && $record->jam_tayang && $record->jam_selesai) {
+            $jamMulai = \Carbon\Carbon::parse($record->jam_tayang)->format('H:i');
+            $jamSelesai = \Carbon\Carbon::parse($record->jam_selesai)->format('H:i');
+            $component->state("{$jamMulai}|{$jamSelesai}");
+        }
+    })
+    // Hanya ambil jam mulai (misal: 10:00) untuk disimpan ke kolom jam_tayang
+    ->dehydrateStateUsing(function ($state) {
+        if ($state && str_contains($state, '|')) {
+            return trim(explode('|', $state)[0]);
+        }
+        return $state;
+    }),
 
-                                // 2. Hidden input untuk jam_selesai, diisi otomatis berdasarkan jam_tayang yang dipilih
-                                \Filament\Forms\Components\Hidden::make('jam_selesai')
-                                    ->dehydrateStateUsing(function ($state, Get $get) {
-                                        $waktu = $get('jam_tayang');
-                                        if ($waktu && str_contains($waktu, '|')) {
-                                            return trim(explode('|', $waktu)[1]); // Ambil jam selesai dari format '|'
-                                        }
-                                        return $state;
-                                    }),
+// KUNCI PENYELAMAT: Ambil jam selesai secara mandiri dari state siaran yang sama
+\Filament\Forms\Components\Hidden::make('jam_selesai')
+    ->dehydrated(true) // Pastikan field ini tetap ikut dikirim ke database
+    ->dehydrateStateUsing(function (Get $get) {
+        $state = $get('jam_tayang'); // Ambil nilai dari dropdown 'jam_tayang'
+        if ($state && str_contains($state, '|')) {
+            return trim(explode('|', $state)[1]); // Ambil jam selesai (misal: 10:30)
+        }
+        return null;
+    }),
 
                                 Group::make()->schema([
                                     Select::make('nama_program')

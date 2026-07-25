@@ -29,6 +29,10 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Components\ImageEntry;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\IconEntry;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\IconColumn;
+
+
 class LaporanUtamaResource extends Resource
 {
     protected static ?string $model = LaporanUtama::class;
@@ -40,7 +44,6 @@ class LaporanUtamaResource extends Resource
     protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-document-duplicate'; // Ikon Dokumen
     protected static ?int $navigationSort = 1; // Posisi paling atas
 
-
     protected static ?string $recordTitleAttribute = 'sidebar';
 
     public static function form(Schema $schema): Schema
@@ -51,10 +54,11 @@ class LaporanUtamaResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->recordUrl(
-                fn ($record): string => "/laporan/{$record->id}/edit")
+            // 1. PERUBAHAN PERTAMA: Mematikan custom recordUrl agar baris tabel 
+            // saat diklik kembali membuka form Edit bawaan Filament, bukan custom blade.
+            // ->recordUrl(fn ($record): string => "/laporan/{$record->id}/edit")
             ->columns([
-                Tables\Columns\TextColumn::make('shift')
+                TextColumn::make('shift')
                     ->label('Shift')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
@@ -62,22 +66,22 @@ class LaporanUtamaResource extends Resource
                         'sore' => 'indigo',
                         default => 'gray',
                     }),
-                Tables\Columns\TextColumn::make('tanggal_tugas')
+                TextColumn::make('tanggal_tugas')
                     ->label('Tanggal')
                     ->date('d M Y')
                     ->sortable(),
-                Tables\Columns\TextColumn::make('nama_petugas')
+                TextColumn::make('nama_petugas')
                     ->label('TD')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('pdu_nama')
+                TextColumn::make('pdu_nama')
                     ->label('PDU')
                     ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('tx_petugas_nama')
+                TextColumn::make('tx_petugas_nama')
                     ->label('TX')
                     
                     ->toggleable(isToggledHiddenByDefault: true),
                 // --- PERBAIKAN LOG SIARAN (MENAMPILKAN JAM, PROGRAM, STATUS & CATATAN) ---
-                Tables\Columns\TextColumn::make('log_siaran_lengkap')
+                TextColumn::make('log_siaran_lengkap')
                     ->label('Log Siaran')
                     ->html() // Mengizinkan render HTML
                     ->getStateUsing(function ($record) {
@@ -107,10 +111,10 @@ class LaporanUtamaResource extends Resource
                         $html .= '</ul>';
                         return $html;
                     }),
-                Tables\Columns\IconColumn::make('kru_lengkap')
+                IconColumn::make('kru_lengkap')
                     ->label('Kru')
                     ->boolean(),
-                Tables\Columns\IconColumn::make('pra_kendala')
+                IconColumn::make('pra_kendala')
                     ->label('Kendala')
                     ->boolean()
                     ->trueIcon('heroicon-o-exclamation-triangle')
@@ -121,7 +125,6 @@ class LaporanUtamaResource extends Resource
             ->filters([
                 //
             ])
-            // --- HEADER ACTIONS: TOMBOL EXPORT EXCEL DI ATAS TABEL ---
             // --- HEADER ACTIONS: TOMBOL EXPORT EXCEL DI ATAS TABEL ---
             ->headerActions([
                 Action::make('export_excel') // <-- BERSIH! (Tanpa Tables\)
@@ -148,8 +151,6 @@ class LaporanUtamaResource extends Resource
                     }),
             ])
             ->actions([
-                // --- 1. TOMBOL LIHAT EVIDENCE (POP-UP) ---
-                // --- 1. TOMBOL LIHAT EVIDENCE (POP-UP) ---
                 // --- 1. TOMBOL LIHAT EVIDENCE (POP-UP) ---
                 Action::make('lihat_evidence') 
                     ->label('Evidence')
@@ -290,9 +291,9 @@ class LaporanUtamaResource extends Resource
                     ->url(fn (LaporanUtama $record) => "/evidence/{$record->id}/download")
                     ->openUrlInNewTab(),
 
-                // --- 3. TOMBOL EDIT ---
-                // --- 3. TOMBOL EDIT (DIARAHKAN KE FRONT-END BUATAN ABANG) ---
-                //
+                // 2. PERUBAHAN KEDUA: Memunculkan tombol Edit bawaan Filament
+                // yang sebelumnya hanya berupa komentar di source code Abang.
+                EditAction::make(), 
 
                 // --- 4. TOMBOL HAPUS ---
                 DeleteAction::make(), // <-- BERSIH!

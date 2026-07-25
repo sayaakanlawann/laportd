@@ -57,42 +57,85 @@ class LaporanBulanSheet implements FromCollection, WithHeadings, WithMapping, Sh
             ? implode(', ', $laporan->tx_petugas_nama) 
             : $laporan->tx_petugas_nama;
 
-        // 2. OLAH DATA EVIDENCE (ARRAY -> TEKS BERSUSUN)
+        // 2. OLAH DATA EVIDENCE (GABUNGAN KOLOM BARU DAN DATA LAMA)
         $evidenceText = '';
-        if (is_array($laporan->evidence) && count($laporan->evidence) > 0) {
-            foreach ($laporan->evidence as $ev) {
-                
-                // --- PERBAIKAN BEDAH MIKRO MUTLAK ---
-                // Jangan gunakan $ev['link_drive'] dari database.
-                // Rakit ulang linknya pakai asset() & file_id agar dinamis mengikuti Ngrok/Localhost!
-                $linkDinamis = asset('storage/' . $ev['file_id']);
-                
-                $evidenceText .= $ev['keterangan'] . " :\n" . $linkDinamis . "\n\n";
+
+        // Fungsi Helper untuk merakit teks per kategori kolom
+        $processEvidence = function($labelSection, $data) {
+            $textOutput = '';
+            
+            if (empty($data)) return $textOutput;
+            
+            if (is_string($data)) {
+                $decoded = json_decode($data, true);
+                $data = is_array($decoded) ? $decoded : [$data];
             }
-            // Menghapus enter lebih/kosong di bagian paling bawah teks
-            $evidenceText = trim($evidenceText);
-        } else {
+
+            if (is_array($data)) {
+                $validItems = [];
+                foreach ($data as $item) {
+                    $path = '';
+                    $caption = '';
+                    
+                    if (is_array($item)) {
+                        $path = $item['path'] ?? $item['file_id'] ?? reset($item);
+                        $caption = $item['keterangan'] ?? $item['caption'] ?? '';
+                    } else {
+                        $path = $item;
+                    }
+                    
+                    if (!empty($path) && is_string($path)) {
+                        $validItems[] = ['path' => $path, 'caption' => $caption];
+                    }
+                }
+                
+                foreach ($validItems as $index => $item) {
+                    $url = str_starts_with($item['path'], 'http') ? $item['path'] : asset('storage/' . $item['path']);
+                    $imgNum = $index + 1;
+                    $imgCaption = !empty($item['caption']) ? $item['caption'] : "Gambar {$imgNum} : {$labelSection}";
+                    
+                    $textOutput .= $imgCaption . " :\n" . $url . "\n\n";
+                }
+            }
+            return $textOutput;
+        };
+
+        // Kumpulkan tautan dari semua kolom yang tersedia
+        $evidenceText .= $processEvidence('Sebelum Siaran', $laporan->evidence_sebelum_siaran);
+        $evidenceText .= $processEvidence('Alat & Master', $laporan->ev_alat_studio);
+        $evidenceText .= $processEvidence('Jaringan', $laporan->ev_jaringan);
+        $evidenceText .= $processEvidence('Jalur AV', $laporan->ev_jalur_av);
+        $evidenceText .= $processEvidence('Evidence Kendala', $laporan->pra_ev_kendala);
+        
+        // Kumpulkan arsip data lama
+        $evidenceText .= $processEvidence('Arsip Evidence (Lama)', $laporan->evidence);
+        if (isset($laporan->link_drive)) {
+            $evidenceText .= $processEvidence('Arsip Link (Lama)', $laporan->link_drive);
+        }
+
+        // Bersihkan spasi kosong berlebih di akhir teks
+        $evidenceText = trim($evidenceText);
+        if (empty($evidenceText)) {
             $evidenceText = 'Tidak ada evidence';
         }
 
         return [
-            $waktuSubmit, // <-- Field waktu form disubmit
+            $waktuSubmit, 
             Carbon::parse($laporan->tanggal_tugas)->format('d-m-Y'),
             $laporan->nama_petugas,
             $laporan->pdu_nama,
-            $petugasTx, // <-- Variabel TX yang sudah dirapikan
+            $petugasTx, 
             implode("\n", $waktu),
             implode("\n", $program),
             implode("\n", $jenis),
             implode("\n", $status),
             $laporan->kesimpulan,
-            $evidenceText // <-- Tambahan kolom baru untuk Evidence
+            $evidenceText // <-- Hasil gabungan link evidence yang sudah berformat rapi
         ];
     }
 
     public function headings(): array
     {
-        // TAMBAHKAN JUDUL HEADER BARU DI AKHIR
         return [
             'Timestamp', 
             'Tanggal Tugas', 
@@ -104,14 +147,12 @@ class LaporanBulanSheet implements FromCollection, WithHeadings, WithMapping, Sh
             'Jenis Acara', 
             'Status & Kendala', 
             'Kesimpulan',
-            'Link Evidence' // <-- Header Baru
+            'Link Evidence'
         ];
     }
 
     public function styles(Worksheet $sheet)
     {
-        // GESER ABJAD STYLING KARENA KOLOM BERTAMBAH MENJADI K
-        // Kita juga tambahkan kolom K ke dalam WrapText agar link drive tidak memanjang ke samping
         $sheet->getStyle('F:K')->getAlignment()->setWrapText(true); 
         $sheet->getStyle('A:K')->getAlignment()->setVertical('top');
         $sheet->getStyle('A1:K1')->getFont()->setBold(true);
