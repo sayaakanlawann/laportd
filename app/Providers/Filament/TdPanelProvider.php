@@ -47,7 +47,7 @@ class TdPanelProvider extends PanelProvider
             ->widgets([
                 AccountWidget::class,
                 \App\Filament\Widgets\AnalyticsWidget::class,
-                \App\Filament\Widgets\PortalShiftWidget::class, // <-- WIDGET SHIFT
+                
         
             ])
             ->middleware([

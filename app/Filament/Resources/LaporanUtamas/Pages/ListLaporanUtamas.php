@@ -32,9 +32,9 @@ class ListLaporanUtamas extends ListRecords
                 ->action(function (array $data) {
                     // Setelah user pilih shift dan klik submit, arahkan ke halaman create 
                     // dengan membawa parameter shift di URL (contoh: /laporan-utamas/create?shift=pagi)
-                    return redirect()->route('filament.admin.resources.laporan-utamas.create', [
-                        'shift' => $data['shift']
-                    ]);
+                    return redirect(static::getResource()::getUrl('create', [
+        'shift' => $data['shift']
+    ]));
                 }),
         ];
     }

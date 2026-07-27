@@ -169,13 +169,15 @@ Hidden::make('shift')
                                 
                                 Select::make('jam_tayang')
     ->label('Waktu Siaran')
-    ->options(function ($get) {
-        // Ambil shift dari parameter URL halaman (aman saat halaman pertama dibuka)
-        $shiftAktif = request()->query('shift');
+    ->options(function ($livewire) {
+        // Ambil nilai shift secara paksa langsung dari array state Livewire
+        // Cara ini paling kebal terhadap refresh AJAX di dalam Repeater.
+        $shiftAktif = data_get($livewire->data, 'shift');
 
-        // Jika request URL kosong (misal saat tambah baris repeater via AJAX), 
-        // ambil dari state form utama root menggunakan data_get
-        $shiftAktif = request()->query('shift');
+        // Fallback tambahan (untuk jaga-jaga saat halaman baru pertama kali dimuat)
+        if (!$shiftAktif) {
+            $shiftAktif = request()->query('shift');
+        }
 
         $query = ProgramSiaran::where('is_aktif', true);
 
@@ -213,6 +215,8 @@ Hidden::make('shift')
         }
         return $state;
     }),
+
+    Hidden::make('jam_selesai'),
 
                                 Group::make()->schema([
                                     Select::make('nama_program')
