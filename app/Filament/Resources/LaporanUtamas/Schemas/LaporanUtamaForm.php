@@ -50,12 +50,13 @@ Hidden::make('shift')
                                 ->required()
                                 ->columnSpanFull(),
                             
-                            Select::make('nama_petugas')
-                                ->label('Nama Petugas (TD)')
-                                ->options(Petugas::where('is_aktif', true)->where('jabatan_utama', 'Technical Director')->pluck('nama', 'nama'))
-                                ->searchable()
-                                ->required()
-                                ->columnSpanFull(),
+                            TextInput::make('nama_petugas')
+    ->label('Nama Petugas (TD)')
+    ->formatStateUsing(fn ($state) => $state ?? auth()->user()->name)
+    ->disabled() 
+    ->dehydrated() // Wajib ada agar nilai tetap tersimpan ke database saat disubmit
+    ->required()
+    ->columnSpanFull(),
 
                             Select::make('pdu_nama')
                                 ->label('Petugas PDU')

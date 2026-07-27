@@ -211,7 +211,15 @@ class LaporanUtamaResource extends Resource
     }
     public static function getEloquentQuery(): Builder
     {
-        // Asumsinya: nama user yang sedang login sama persis dengan 'nama_petugas' di tabel laporan
-        return parent::getEloquentQuery()->where('nama_petugas', auth()->user()->name);
+        $query = parent::getEloquentQuery();
+
+    // Deteksi jika user sedang mengakses melalui panel TD
+    if (filament()->getCurrentPanel()->getId() === 'td') {
+        // Filter data agar HANYA menampilkan dan mengekspor laporan miliknya sendiri
+        $query->where('nama_petugas', auth()->user()->name);
+    }
+
+    // Jika di panel 'admin' (Admin/Developer), query tidak difilter sehingga tampil/terekspor semua
+    return $query;
     }
 }

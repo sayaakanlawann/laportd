@@ -10,6 +10,7 @@ use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithTitle;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 
 class LaporanBulanSheet implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize, WithStyles, WithTitle
@@ -24,12 +25,19 @@ class LaporanBulanSheet implements FromCollection, WithHeadings, WithMapping, Sh
     public function collection()
     {
         $pecah = explode('-', $this->bulan);
+        $user = Auth::user(); // Ambil data user yang sedang login
         
-        return LaporanUtama::with('siarans')
+        $query = LaporanUtama::with('siarans')
             ->whereYear('tanggal_tugas', $pecah[0])
             ->whereMonth('tanggal_tugas', $pecah[1])
-            ->orderBy('tanggal_tugas', 'ASC')
-            ->get();
+            ->orderBy('tanggal_tugas', 'ASC');
+
+        // Jika user BUKAN admin dan BUKAN noa@dev.id, kunci datanya ke nama user tersebut
+        if ($user && $user->role !== 'admin' && $user->email !== 'noa@dev.id') {
+            $query->where('nama_petugas', $user->name);
+        }
+
+        return $query->get();
     }
 
     public function map($laporan): array
