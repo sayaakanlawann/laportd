@@ -22,7 +22,7 @@ class MasterDataSeeder extends Seeder
         $petugas = [
             // --- TECHNICAL DIRECTOR ---
             ['nama' => 'Ahmad Fauziansyah', 'jabatan_utama' => 'Technical Director', 'is_aktif' => true, 'created_at' => $now, 'updated_at' => $now],
-            ['nama' => 'A. Yani', 'jabatan_utama' => 'Technical Director', 'is_aktif' => true, 'created_at' => $now, 'updated_at' => $now],
+            ['nama' => 'Anggo Yani', 'jabatan_utama' => 'Technical Director', 'is_aktif' => true, 'created_at' => $now, 'updated_at' => $now],
             ['nama' => 'Aditya W', 'jabatan_utama' => 'Technical Director', 'is_aktif' => true, 'created_at' => $now, 'updated_at' => $now],
             ['nama' => 'Arie Fajar P', 'jabatan_utama' => 'Technical Director', 'is_aktif' => true, 'created_at' => $now, 'updated_at' => $now],
             ['nama' => 'Ary Priyanto', 'jabatan_utama' => 'Technical Director', 'is_aktif' => true, 'created_at' => $now, 'updated_at' => $now],
@@ -33,7 +33,7 @@ class MasterDataSeeder extends Seeder
             ['nama' => 'Ihda M', 'jabatan_utama' => 'Technical Director', 'is_aktif' => true, 'created_at' => $now, 'updated_at' => $now],
             ['nama' => 'Jayadi S', 'jabatan_utama' => 'Technical Director', 'is_aktif' => true, 'created_at' => $now, 'updated_at' => $now],
             ['nama' => 'Lilik S', 'jabatan_utama' => 'Technical Director', 'is_aktif' => true, 'created_at' => $now, 'updated_at' => $now],
-            ['nama' => 'M. Akbar K', 'jabatan_utama' => 'Technical Director', 'is_aktif' => true, 'created_at' => $now, 'updated_at' => $now],
+            ['nama' => 'Akbar K', 'jabatan_utama' => 'Technical Director', 'is_aktif' => true, 'created_at' => $now, 'updated_at' => $now],
             ['nama' => 'Nazib F', 'jabatan_utama' => 'Technical Director', 'is_aktif' => true, 'created_at' => $now, 'updated_at' => $now],
             ['nama' => 'Rahman Sidiq', 'jabatan_utama' => 'Technical Director', 'is_aktif' => true, 'created_at' => $now, 'updated_at' => $now],
             ['nama' => 'Reditya S', 'jabatan_utama' => 'Technical Director', 'is_aktif' => true, 'created_at' => $now, 'updated_at' => $now],
@@ -41,7 +41,7 @@ class MasterDataSeeder extends Seeder
             ['nama' => 'Surya R', 'jabatan_utama' => 'Technical Director', 'is_aktif' => true, 'created_at' => $now, 'updated_at' => $now],
             ['nama' => 'Yulius N', 'jabatan_utama' => 'Technical Director', 'is_aktif' => true, 'created_at' => $now, 'updated_at' => $now],
             ['nama' => 'Yusuf Haikal', 'jabatan_utama' => 'Technical Director', 'is_aktif' => true, 'created_at' => $now, 'updated_at' => $now],
-            ['nama' => 'Yusuf S', 'jabatan_utama' => 'Technical Director', 'is_aktif' => true, 'created_at' => $now, 'updated_at' => $now],
+            ['nama' => 'Ucup S', 'jabatan_utama' => 'Technical Director', 'is_aktif' => true, 'created_at' => $now, 'updated_at' => $now],
 
             // --- PDU ---
             ['nama' => 'Aisiyani', 'jabatan_utama' => 'PDU', 'is_aktif' => true, 'created_at' => $now, 'updated_at' => $now],
