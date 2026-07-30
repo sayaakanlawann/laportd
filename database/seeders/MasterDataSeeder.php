@@ -15,8 +15,8 @@ class MasterDataSeeder extends Seeder
         // Bersihkan data petugas & program lama agar tidak dobel
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
         DB::table('petugas')->truncate();
-        DB::table('program_siarans')->truncate();
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        // DB::table('program_siarans')->truncate();
+        // DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
         // 1. DATA KRU ASLI TVRI KALSEL
         $petugas = [
@@ -80,31 +80,8 @@ class MasterDataSeeder extends Seeder
         ];
         DB::table('petugas')->insert($petugas);
 
-        // 2. Suntik Ulang Data Program Siaran
-        // 2. Suntik Ulang Data Program Siaran (Sesuai Jam Tayang)
-        $programs = [];
         
-        $jam15 = ['Banua Bicara', 'Binian', 'Cahaya Qolbu', 'Hidup Sehat', 'Inspirasi Indonesia', 'Jejak Islam', 'Mari Menggambar', 'Ngopi', 'Perspektif', 'Pesona Indonesia', 'Remaja Hebat', 'Sinema Banua', 'Siraman Rohani', "Ramadan Lil Qur'an", 'Warung Bubuhan', 'Yuk Mengaji'];
-        foreach($jam15 as $p) {
-            $programs[] = ['nama_program' => $p, 'jam_tayang_default' => '15:00|15:59', 'is_aktif' => true, 'created_at' => $now, 'updated_at' => $now];
-        }
 
-        $jam16 = ['Bakunjang', 'Cahaya Qolbu', 'Cerdas Ceria', 'Dangdut Keliling', 'Feature', 'Hari Yang Berkah', 'Kalimantan Selatan Hari Ini', 'Kalsel Sepekan', 'Kindai Limpuar', 'Lensa Olahraga', 'Music On Studio', 'Ngopi', 'Remaja Hebat', 'Sapa Pemirsa', 'Sekolah Ku Keren', 'Siroh Protestan', 'Siroh Hindu', 'Siroh Katolik', 'Siroh Buddha', 'Siroh Konghuchu'];
-        foreach($jam16 as $p) {
-            $programs[] = ['nama_program' => $p, 'jam_tayang_default' => '16:00|16:59', 'is_aktif' => true, 'created_at' => $now, 'updated_at' => $now];
-        }
-
-        $jam17 = ['Kalsel Hari ini', 'Kalsel Sepekan', 'Marhaban Ya Ramadhan', 'Habar Banua'];
-        foreach($jam17 as $p) {
-            $programs[] = ['nama_program' => $p, 'jam_tayang_default' => '17:00|17:59', 'is_aktif' => true, 'created_at' => $now, 'updated_at' => $now];
-        }
-
-        // TAMBAHAN BARU UNTUK JAM 18:00
-        $jam18 = ['Amazing Indonesia', 'Anak Indonesia', 'Fiqih Wanita', 'Inspirasi Indonesia', 'Jejak Islam', 'Kajian Tauhid', 'Kuliner Indonesia', 'Lintas Borneo', 'Mutiara Hadits', 'Pesona Indonesia', 'Potensi Banua', 'Zona Tani'];
-        foreach($jam18 as $p) {
-            $programs[] = ['nama_program' => $p, 'jam_tayang_default' => '18:00|18:59', 'is_aktif' => true, 'created_at' => $now, 'updated_at' => $now];
-        }
-
-        DB::table('program_siarans')->insert($programs);
+        
     }
 }

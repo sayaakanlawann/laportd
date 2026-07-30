@@ -33,7 +33,7 @@ class PetugasResource extends Resource
     }
     
 
-    protected static ?string $recordTitleAttribute = 'sidebar';
+    
 
     public static function form(Schema $schema): Schema
     {

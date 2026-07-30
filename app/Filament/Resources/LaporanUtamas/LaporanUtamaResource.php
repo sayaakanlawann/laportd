@@ -44,7 +44,7 @@ class LaporanUtamaResource extends Resource
     protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-document-duplicate'; // Ikon Dokumen
     protected static ?int $navigationSort = 1; // Posisi paling atas
 
-    protected static ?string $recordTitleAttribute = 'sidebar';
+    
 
     public static function form(Schema $schema): Schema
     {
@@ -76,6 +76,13 @@ class LaporanUtamaResource extends Resource
                 TextColumn::make('pdu_nama')
                     ->label('PDU')
                     ->toggleable(isToggledHiddenByDefault: true),
+                
+                TextColumn::make('asisten_pdu')
+                    ->label('Asisten PDU')
+                    ->default('Tidak ada asisten PDU') // <--- Jika null di database, kalimat ini otomatis muncul
+                    ->color(fn ($state) => $state === 'Tidak ada asisten PDU' ? 'gray' : 'primary') // Beri warna beda agar mudah dibaca
+                    ->toggleable(isToggledHiddenByDefault: true),
+
                 TextColumn::make('tx_petugas_nama')
                     ->label('TX')
                     

@@ -50,6 +50,7 @@ class AdminPanelProvider extends PanelProvider
                 AccountWidget::class,
                 \App\Filament\Widgets\AnalyticsWidget::class,
                 
+                
         
             ])
             ->middleware([

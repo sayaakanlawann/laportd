@@ -64,6 +64,17 @@ Hidden::make('shift')
                                 ->searchable()
                                 ->required()
                                 ->columnSpanFull(),
+                                Select::make('asisten_pdu')
+    ->label('Asisten PDU')
+    ->placeholder('Pilih asisten (Opsional)')
+    ->options(
+        // Query langsung ke tabel user berdasarkan jabatan. 
+        // Silakan ganti 'asisten_pdu' dengan nama role yang sebenarnya ada di database Abang
+        Petugas::where('jabatan_utama', 'asisten_pdu')->pluck('nama', 'nama')
+    )
+    ->searchable()
+    ->preload()
+    ->columnSpanFull(),
 
                             Select::make('kru_lengkap')
                                 ->label('Kehadiran Kru')
@@ -262,16 +273,17 @@ Hidden::make('shift')
                                     ->required(),
 
                                 Select::make('status_siaran')
-                                    ->label('Status')
+                                    ->label('Kendala Siaran')
                                     ->options([
                                         'Aman' => 'Aman',
                                         'Audio' => 'Audio',
                                         'Video' => 'Video',
+                                        'Perangkat Lainnya' => 'Perangkat Lainnya',
                                     ])
                                     ->required(),
 
                                 TextInput::make('catatan_kendala')
-                                    ->label('Catatan'),
+                                    ->label('Detil Kendala'),
                             ])
                     ])->columnSpanFull(),
 

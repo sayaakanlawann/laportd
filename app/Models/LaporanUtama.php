@@ -11,6 +11,7 @@ class LaporanUtama extends Model
         'tanggal_tugas',
         'nama_petugas',
         'pdu_nama',
+        'asisten_pdu',
         'tx_petugas_nama',
         'pra_kendala',
         'pra_ket_kendala',
