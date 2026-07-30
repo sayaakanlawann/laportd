@@ -21,7 +21,7 @@ class MasterDataSeeder extends Seeder
         // 1. DATA KRU ASLI TVRI KALSEL
         $petugas = [
             // --- TECHNICAL DIRECTOR ---
-            ['nama' => 'A. Fauziansyah', 'jabatan_utama' => 'Technical Director', 'is_aktif' => true, 'created_at' => $now, 'updated_at' => $now],
+            ['nama' => 'Ahmad Fauziansyah', 'jabatan_utama' => 'Technical Director', 'is_aktif' => true, 'created_at' => $now, 'updated_at' => $now],
             ['nama' => 'A. Yani', 'jabatan_utama' => 'Technical Director', 'is_aktif' => true, 'created_at' => $now, 'updated_at' => $now],
             ['nama' => 'Aditya W', 'jabatan_utama' => 'Technical Director', 'is_aktif' => true, 'created_at' => $now, 'updated_at' => $now],
             ['nama' => 'Arie Fajar P', 'jabatan_utama' => 'Technical Director', 'is_aktif' => true, 'created_at' => $now, 'updated_at' => $now],
