@@ -49,8 +49,11 @@ class AppServiceProvider extends ServiceProvider
                 $config
             );
         });
-        if (str_contains(request()->getHost(), 'ngrok')) {
-            URL::forceScheme('https');
-        }
+        // if (str_contains(request()->getHost(), 'ngrok')) {
+        //     URL::forceScheme('https');
+        // }
+        if (config('app.env') === 'production') {
+        URL::forceScheme('https');
     }
+}
 }
