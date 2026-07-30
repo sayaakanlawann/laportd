@@ -30,6 +30,7 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
+            ->sidebarCollapsibleOnDesktop()
             ->brandLogo(asset('logo-tvri.png'))
             ->favicon(asset('logo-tvri.png')) // Ganti dengan nama file SVG Abang di public
             ->brandLogoHeight('3rem')
@@ -48,7 +49,8 @@ class AdminPanelProvider extends PanelProvider
             ->widgets([
                 AccountWidget::class,
                 \App\Filament\Widgets\AnalyticsWidget::class,
-                \App\Filament\Widgets\PortalShiftWidget::class, // <-- WIDGET SHIFT
+                
+                
         
             ])
             ->middleware([

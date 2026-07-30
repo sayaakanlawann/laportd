@@ -23,6 +23,15 @@ use Filament\Actions\EditAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
+use Filament\Tables\Columns\ImageColumn;
+use Filament\Schemas\Components\Section;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Components\ImageEntry;
+use Filament\Infolists\Components\RepeatableEntry;
+use Filament\Infolists\Components\IconEntry;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\IconColumn;
+
 
 class LaporanUtamaResource extends Resource
 {
@@ -35,8 +44,7 @@ class LaporanUtamaResource extends Resource
     protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-document-duplicate'; // Ikon Dokumen
     protected static ?int $navigationSort = 1; // Posisi paling atas
 
-
-    protected static ?string $recordTitleAttribute = 'sidebar';
+    
 
     public static function form(Schema $schema): Schema
     {
@@ -46,10 +54,11 @@ class LaporanUtamaResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->recordUrl(
-                fn ($record): string => "/laporan/{$record->id}/edit")
+            // 1. PERUBAHAN PERTAMA: Mematikan custom recordUrl agar baris tabel 
+            // saat diklik kembali membuka form Edit bawaan Filament, bukan custom blade.
+            // ->recordUrl(fn ($record): string => "/laporan/{$record->id}/edit")
             ->columns([
-                Tables\Columns\TextColumn::make('shift')
+                TextColumn::make('shift')
                     ->label('Shift')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
@@ -57,22 +66,29 @@ class LaporanUtamaResource extends Resource
                         'sore' => 'indigo',
                         default => 'gray',
                     }),
-                Tables\Columns\TextColumn::make('tanggal_tugas')
+                TextColumn::make('tanggal_tugas')
                     ->label('Tanggal')
                     ->date('d M Y')
                     ->sortable(),
-                Tables\Columns\TextColumn::make('nama_petugas')
+                TextColumn::make('nama_petugas')
                     ->label('TD')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('pdu_nama')
+                TextColumn::make('pdu_nama')
                     ->label('PDU')
                     ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('tx_petugas_nama')
+                
+                TextColumn::make('asisten_pdu')
+                    ->label('Asisten PDU')
+                    ->default('Tidak ada asisten PDU') // <--- Jika null di database, kalimat ini otomatis muncul
+                    ->color(fn ($state) => $state === 'Tidak ada asisten PDU' ? 'gray' : 'primary') // Beri warna beda agar mudah dibaca
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                TextColumn::make('tx_petugas_nama')
                     ->label('TX')
                     
                     ->toggleable(isToggledHiddenByDefault: true),
                 // --- PERBAIKAN LOG SIARAN (MENAMPILKAN JAM, PROGRAM, STATUS & CATATAN) ---
-                Tables\Columns\TextColumn::make('log_siaran_lengkap')
+                TextColumn::make('log_siaran_lengkap')
                     ->label('Log Siaran')
                     ->html() // Mengizinkan render HTML
                     ->getStateUsing(function ($record) {
@@ -102,10 +118,10 @@ class LaporanUtamaResource extends Resource
                         $html .= '</ul>';
                         return $html;
                     }),
-                Tables\Columns\IconColumn::make('kru_lengkap')
+                IconColumn::make('kru_lengkap')
                     ->label('Kru')
                     ->boolean(),
-                Tables\Columns\IconColumn::make('pra_kendala')
+                IconColumn::make('pra_kendala')
                     ->label('Kendala')
                     ->boolean()
                     ->trueIcon('heroicon-o-exclamation-triangle')
@@ -116,7 +132,6 @@ class LaporanUtamaResource extends Resource
             ->filters([
                 //
             ])
-            // --- HEADER ACTIONS: TOMBOL EXPORT EXCEL DI ATAS TABEL ---
             // --- HEADER ACTIONS: TOMBOL EXPORT EXCEL DI ATAS TABEL ---
             ->headerActions([
                 Action::make('export_excel') // <-- BERSIH! (Tanpa Tables\)
@@ -144,31 +159,136 @@ class LaporanUtamaResource extends Resource
             ])
             ->actions([
                 // --- 1. TOMBOL LIHAT EVIDENCE (POP-UP) ---
-                Action::make('lihat_evidence') // <-- BERSIH!
+                Action::make('lihat_evidence') 
                     ->label('Evidence')
                     ->icon('heroicon-o-photo')
                     ->color('info')
                     ->modalHeading(fn ($record) => '🖼️ Bukti Evidence - TD: ' . $record->nama_petugas)
+                    ->modalWidth('4xl')
                     ->modalSubmitAction(false) 
                     ->modalCancelActionLabel('Tutup')
-                    ->infolist([
-                        \Filament\Infolists\Components\RepeatableEntry::make('evidence')
-                            ->label('')
-                            ->schema([
-                                \Filament\Infolists\Components\TextEntry::make('keterangan')
-                                    ->label('Keterangan')
-                                    ->weight('bold')
-                                    ->color('info'),
-                                \Filament\Infolists\Components\ImageEntry::make('link_drive')
-                                    ->hiddenLabel()
-                                    ->height(200)
-                                    ->extraImgAttributes(['class' => 'rounded-xl shadow-sm object-cover w-full'])
-                                    ->url(fn ($state) => $state)
-                                    ->openUrlInNewTab(),
-                            ])
-                            ->grid(2)
+                    ->modalContent(function ($record): HtmlString {
+                        $html = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; width: 100%;">';
+                        
+                        // Helper khusus Kolom Baru (Filament) dengan label deskriptif per gambar
+                        $renderFilamentImages = function($labelSection, $images) use (&$html) {
+                            if (empty($images)) return;
                             
-                    ]),
+                            if (is_string($images)) {
+                                $decoded = json_decode($images, true);
+                                $images = is_array($decoded) ? $decoded : [$images];
+                            }
+                            
+                            if (is_array($images)) {
+                                $validItems = [];
+                                foreach ($images as $img) {
+                                    $path = '';
+                                    $customCaption = '';
+                                    
+                                    if (is_array($img)) {
+                                        $path = $img['path'] ?? reset($img);
+                                        $customCaption = $img['keterangan'] ?? $img['caption'] ?? '';
+                                    } else {
+                                        $path = $img;
+                                    }
+                                    
+                                    if (!empty($path) && is_string($path)) {
+                                        $validItems[] = ['path' => $path, 'caption' => $customCaption];
+                                    }
+                                }
+                                
+                                if (!empty($validItems)) {
+                                    $html .= '<div style="background: #1e293b; padding: 16px; border-radius: 8px; width: 100%; box-sizing: border-box;">';
+                                    $html .= '<strong style="color: #38bdf8; display: block; margin-bottom: 10px; font-size: 0.95rem;">' . $labelSection . '</strong>';
+                                    $html .= '<div style="display: flex; gap: 12px; flex-wrap: wrap;">';
+                                    
+                                    foreach ($validItems as $index => $item) {
+                                        $url = str_starts_with($item['path'], 'http') ? $item['path'] : asset('storage/' . $item['path']);
+                                        
+                                        // Format label per gambar: Gambar X : [Nama Kategori] atau custom caption jika ada
+                                        $imgNum = $index + 1;
+                                        $imgCaption = !empty($item['caption']) 
+                                            ? $item['caption'] 
+                                            : "Gambar {$imgNum} : {$labelSection}";
+                                        
+                                        $html .= '<div style="display: flex; flex-direction: column; align-items: center; max-width: 120px;">';
+                                        $html .= '<a href="' . $url . '" target="_blank"><img src="' . $url . '" style="width: 110px; height: 110px; object-fit: cover; border-radius: 6px; border: 1px solid #475569;" /></a>';
+                                        $html .= '<span style="font-size: 0.7rem; color: #94a3b8; margin-top: 6px; text-align: center; word-break: break-word; line-height: 1.2;">' . htmlspecialchars($imgCaption) . '</span>';
+                                        $html .= '</div>';
+                                    }
+                                    
+                                    $html .= '</div></div>';
+                                }
+                            }
+                        };
+
+                        // 1. Render Kolom Baru Filament
+                        $renderFilamentImages('Sebelum Siaran', $record->evidence_sebelum_siaran);
+                        $renderFilamentImages('Alat & Master', $record->ev_alat_studio);
+                        $renderFilamentImages('Jaringan', $record->ev_jaringan);
+                        $renderFilamentImages('Jalur AV', $record->ev_jalur_av);
+                        $renderFilamentImages('Evidence Kendala', $record->pra_ev_kendala);
+
+                        // 2. Render Data Lama
+                        if (!empty($record->evidence)) {
+                            $oldImg = is_string($record->evidence) ? json_decode($record->evidence, true) ?? $record->evidence : $record->evidence;
+                            $oldImgArray = is_array($oldImg) ? $oldImg : [$oldImg];
+
+                            $html .= '<div style="background: #1e293b; padding: 16px; border-radius: 8px; width: 100%; box-sizing: border-box;">';
+                            $html .= '<strong style="color: #38bdf8; display: block; margin-bottom: 10px; font-size: 0.95rem;">📁 Arsip Evidence (Data Lama)</strong>';
+                            $html .= '<div style="display: flex; gap: 12px; flex-wrap: wrap;">';
+                            
+                            foreach ($oldImgArray as $index => $img) {
+                                $caption = '';
+                                if (is_array($img)) {
+                                    $caption = $img['keterangan'] ?? $img['caption'] ?? '';
+                                    $img = reset($img);
+                                }
+                                if (!empty($img) && is_string($img)) {
+                                    $url = str_starts_with($img, 'http') ? $img : asset('storage/' . $img);
+                                    $imgNum = $index + 1;
+                                    $imgCaption = !empty($caption) ? $caption : "Gambar {$imgNum} : Arsip Evidence";
+
+                                    $html .= '<div style="display: flex; flex-direction: column; align-items: center; max-width: 120px;">';
+                                    $html .= '<a href="' . $url . '" target="_blank"><img src="' . $url . '" style="width: 110px; height: 110px; object-fit: cover; border-radius: 6px; border: 1px solid #475569;" /></a>';
+                                    $html .= '<span style="font-size: 0.7rem; color: #94a3b8; margin-top: 6px; text-align: center; word-break: break-word; line-height: 1.2;">' . htmlspecialchars($imgCaption) . '</span>';
+                                    $html .= '</div>';
+                                }
+                            }
+                            $html .= '</div></div>';
+                        }
+
+                        if (!empty($record->link_drive)) {
+                            $oldLink = is_string($record->link_drive) ? json_decode($record->link_drive, true) ?? $record->link_drive : $record->link_drive;
+                            $oldLinkArray = is_array($oldLink) ? $oldLink : [$oldLink];
+
+                            $html .= '<div style="background: #1e293b; padding: 16px; border-radius: 8px; width: 100%; box-sizing: border-box;">';
+                            $html .= '<strong style="color: #38bdf8; display: block; margin-bottom: 10px; font-size: 0.95rem;">🔗 Arsip Link / File (Data Lama)</strong>';
+                            $html .= '<div style="display: flex; gap: 12px; flex-wrap: wrap;">';
+                            
+                            foreach ($oldLinkArray as $index => $img) {
+                                $caption = '';
+                                if (is_array($img)) {
+                                    $caption = $img['keterangan'] ?? $img['caption'] ?? '';
+                                    $img = reset($img);
+                                }
+                                if (!empty($img) && is_string($img)) {
+                                    $url = str_starts_with($img, 'http') ? $img : asset('storage/' . $img);
+                                    $imgNum = $index + 1;
+                                    $imgCaption = !empty($caption) ? $caption : "Gambar {$imgNum} : Arsip Link";
+
+                                    $html .= '<div style="display: flex; flex-direction: column; align-items: center; max-width: 120px;">';
+                                    $html .= '<a href="' . $url . '" target="_blank"><img src="' . $url . '" style="width: 110px; height: 110px; object-fit: cover; border-radius: 6px; border: 1px solid #475569;" /></a>';
+                                    $html .= '<span style="font-size: 0.7rem; color: #94a3b8; margin-top: 6px; text-align: center; word-break: break-word; line-height: 1.2;">' . htmlspecialchars($imgCaption) . '</span>';
+                                    $html .= '</div>';
+                                }
+                            }
+                            $html .= '</div></div>';
+                        }
+
+                        $html .= '</div>';
+                        return new HtmlString($html);
+                    }),
 
                 // --- 2. TOMBOL UNDUH PDF ---
                 Action::make('download_pdf') // <-- BERSIH!
@@ -178,9 +298,9 @@ class LaporanUtamaResource extends Resource
                     ->url(fn (LaporanUtama $record) => "/evidence/{$record->id}/download")
                     ->openUrlInNewTab(),
 
-                // --- 3. TOMBOL EDIT ---
-                // --- 3. TOMBOL EDIT (DIARAHKAN KE FRONT-END BUATAN ABANG) ---
-                //
+                // 2. PERUBAHAN KEDUA: Memunculkan tombol Edit bawaan Filament
+                // yang sebelumnya hanya berupa komentar di source code Abang.
+                EditAction::make(), 
 
                 // --- 4. TOMBOL HAPUS ---
                 DeleteAction::make(), // <-- BERSIH!
@@ -219,8 +339,8 @@ class LaporanUtamaResource extends Resource
     {
         return [
             'index' => ListLaporanUtamas::route('/'),
-            // 'create' => CreateLaporanUtama::route('/create'),
-            // 'edit' => EditLaporanUtama::route('/{record}/edit'),
+            'create' => CreateLaporanUtama::route('/create'),
+            'edit' => EditLaporanUtama::route('/{record}/edit'),
         ];
     }
 }

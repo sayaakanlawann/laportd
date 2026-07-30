@@ -14,7 +14,6 @@ class JadwalAcaraBaruSeeder extends Seeder
     public function run(): void
     {
         // 1. BERSIHKAN DATA PROGRAM LAMA
-        // Kita gunakan DB statement untuk mematikan foreign key checks sementara jika diperlukan
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
         ProgramSiaran::truncate();
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
@@ -60,7 +59,7 @@ class JadwalAcaraBaruSeeder extends Seeder
             ],
         ];
 
-        // 3. MASUKKAN DATA BARU KE DATABASE
+        // 3. MASUKKAN DATA BARU KE DATABASE (TANPA OTHER)
         foreach ($jadwalProgram as $jamTayang => $programs) {
             foreach ($programs as $namaProgram) {
                 ProgramSiaran::create([
@@ -69,15 +68,8 @@ class JadwalAcaraBaruSeeder extends Seeder
                     'is_aktif'           => true
                 ]);
             }
-            
-            // Tambahkan pilihan "Other" otomatis di setiap slot jam
-            ProgramSiaran::create([
-                'jam_tayang_default' => $jamTayang,
-                'nama_program'       => 'Other',
-                'is_aktif'           => true
-            ]);
         }
         
-        $this->command->info('BERHASIL! Data program lama dibersihkan, dan jadwal baru sukses disuntikkan! 🚀');
+        $this->command->info('BERHASIL! Data program baru sukses disuntikkan tanpa opsi Other! 🚀');
     }
 }

@@ -11,12 +11,18 @@ class LaporanUtama extends Model
         'tanggal_tugas',
         'nama_petugas',
         'pdu_nama',
+        'asisten_pdu',
         'tx_petugas_nama',
         'pra_kendala',
         'pra_ket_kendala',
         'kru_lengkap',
         'kesimpulan',
         'evidence', // Tambahkan field ini
+        'evidence_sebelum_siaran',
+        'ev_alat_studio',
+        'ev_jaringan',
+        'ev_jalur_av',
+        'pra_ev_kendala',
     ];
 
     // Beri tahu Laravel untuk otomatis mengubah JSON menjadi Array saat dibaca

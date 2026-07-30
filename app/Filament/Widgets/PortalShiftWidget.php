@@ -7,6 +7,7 @@ use Filament\Widgets\Widget;
 class PortalShiftWidget extends Widget
 {
     protected string $view = 'filament.widgets.portal-shift-widget';
+    protected static bool $isDiscovered = false;
     
     // Bikin widgetnya membentang full layar
     protected int | string | array $columnSpan = 'full';
