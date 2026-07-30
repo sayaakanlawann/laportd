@@ -22,7 +22,7 @@ class MasterDataSeeder extends Seeder
         $petugas = [
             // --- TECHNICAL DIRECTOR ---
             ['nama' => 'Ahmad Fauziansyah', 'jabatan_utama' => 'Technical Director', 'is_aktif' => true, 'created_at' => $now, 'updated_at' => $now],
-            ['nama' => 'Anggo Yani', 'jabatan_utama' => 'Technical Director', 'is_aktif' => true, 'created_at' => $now, 'updated_at' => $now],
+            ['nama' => 'Embonk Yani', 'jabatan_utama' => 'Technical Director', 'is_aktif' => true, 'created_at' => $now, 'updated_at' => $now],
             ['nama' => 'Aditya W', 'jabatan_utama' => 'Technical Director', 'is_aktif' => true, 'created_at' => $now, 'updated_at' => $now],
             ['nama' => 'Arie Fajar P', 'jabatan_utama' => 'Technical Director', 'is_aktif' => true, 'created_at' => $now, 'updated_at' => $now],
             ['nama' => 'Ary Priyanto', 'jabatan_utama' => 'Technical Director', 'is_aktif' => true, 'created_at' => $now, 'updated_at' => $now],

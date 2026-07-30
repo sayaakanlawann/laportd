@@ -53,7 +53,8 @@ Hidden::make('shift')
                             TextInput::make('nama_petugas')
     ->label('Nama Petugas (TD)')
     ->formatStateUsing(fn ($state) => $state ?? auth()->user()->name)
-    ->disabled() 
+    ->disabled()
+ 
     ->dehydrated() // Wajib ada agar nilai tetap tersimpan ke database saat disubmit
     ->required()
     ->columnSpanFull(),
@@ -62,11 +63,13 @@ Hidden::make('shift')
                                 ->label('Petugas PDU')
                                 ->options(Petugas::where('is_aktif', true)->where('jabatan_utama', 'PDU')->pluck('nama', 'nama'))
                                 ->searchable()
+                                ->live()
                                 ->required()
                                 ->columnSpanFull(),
                                 Select::make('asisten_pdu')
     ->label('Asisten PDU')
     ->placeholder('Pilih asisten (Opsional)')
+    ->live()
     ->options(
         // Query langsung ke tabel user berdasarkan jabatan. 
         // Silakan ganti 'asisten_pdu' dengan nama role yang sebenarnya ada di database Abang
@@ -78,6 +81,7 @@ Hidden::make('shift')
 
                             Select::make('kru_lengkap')
                                 ->label('Kehadiran Kru')
+                                ->live()
                                 ->options([
                                     '1' => 'Lengkap',
                                     '0' => 'Tidak Lengkap',
@@ -93,6 +97,7 @@ Hidden::make('shift')
             ->pluck('nama', 'nama')
     )
     ->multiple()
+    ->live()
     ->searchable()
     ->required()
     ->columnSpanFull(),
@@ -105,24 +110,28 @@ Hidden::make('shift')
                         ->schema([
                             FileUpload::make('evidence_sebelum_siaran')
                                 ->label('Sebelum Siaran')
+                                
                                 ->disk('public')
                                 ->directory('evidence')
                                 ->image()->multiple()->maxFiles(2)->maxSize(10240)->directory('evidence')->required(),
                                 
                             FileUpload::make('ev_alat_studio')
                                 ->label('Alat & Master')
+                                
                                 ->disk('public')
                                 ->directory('evidence')
                                 ->image()->multiple()->maxFiles(2)->maxSize(10240)->directory('evidence')->required(),
 
                             FileUpload::make('ev_jaringan')
                                 ->label('Jaringan')
+                                
                                 ->disk('public')
                                 ->directory('evidence')
                                 ->image()->multiple()->maxFiles(2)->maxSize(10240)->directory('evidence')->required(),
 
                             FileUpload::make('ev_jalur_av')
                                 ->label('Jalur AV')
+                                
                                 ->disk('public')
                                 ->directory('evidence')
                                 ->image()->multiple()->maxFiles(2)->maxSize(10240)->directory('evidence')->required(),
@@ -151,6 +160,7 @@ Hidden::make('shift')
                             Textarea::make('pra_ket_kendala')
                                 ->label('Keterangan Kendala')
                                 ->rows(2)
+                                ->live(onBlur: true)
                                 ->visible(fn (Get $get): bool => $get('pra_kendala') == '1') // Ubah === menjadi ==
                                 ->required(fn (Get $get): bool => $get('pra_kendala') == '1') // Ubah === menjadi ==
                                 ->columnSpanFull(),
@@ -162,6 +172,7 @@ Hidden::make('shift')
                                 ->image()->multiple()->maxFiles(2)->maxSize(10240)->directory('evidence')
                                 ->visible(fn (Get $get): bool => $get('pra_kendala') == '1') // Ubah === menjadi ==
                                 ->columnSpanFull(),
+                                
                         ]),
 
                 // Akhir Grid Atas
@@ -175,6 +186,11 @@ Hidden::make('shift')
                             ->relationship('siarans')
                             ->label('') 
                             ->addActionLabel('+ Tambah Program')
+                            ->defaultItems(4) // Otomatis memunculkan 4 baris saat buat laporan baru
+                            ->minItems(4)
+                            ->validationMessages([
+                                 'min' => 'Log jam tayang wajib diisi minimal 4 program siaran.',
+                                ])
                             ->columnSpanFull() 
                             ->columns(5)
                             ->schema([
@@ -249,6 +265,7 @@ Hidden::make('shift')
 
                                     TextInput::make('nama_program_custom')
                                         ->label('Ketik Baru')
+                                        ->live()
                                         // Ubah juga type hinting di sini untuk jaga-jaga
                                         ->visible(fn ($get): bool => $get('nama_program') === 'Other')
                                         ->required(fn ($get): bool => $get('nama_program') === 'Other'),
@@ -270,10 +287,12 @@ Hidden::make('shift')
                                         'Playback' => 'Playback',
                                     ])
                                     ->searchable()
+                                    ->live()
                                     ->required(),
 
                                 Select::make('status_siaran')
                                     ->label('Kendala Siaran')
+                                    ->live()
                                     ->options([
                                         'Aman' => 'Aman',
                                         'Audio' => 'Audio',
@@ -283,7 +302,9 @@ Hidden::make('shift')
                                     ->required(),
 
                                 TextInput::make('catatan_kendala')
-                                    ->label('Detil Kendala'),
+                                    ->label('Detil Kendala')
+                                    ->live(onBlur: true),
+                                    
                             ])
                     ])->columnSpanFull(),
 
@@ -295,6 +316,7 @@ Hidden::make('shift')
                     Textarea::make('kesimpulan')
                         ->label('Kesimpulan Akhir')
                         ->rows(3)
+                        ->live(onBlur: true)
                         ->required()
                         ->columnSpanFull(),
                 ])->columnSpanFull(),

@@ -43,6 +43,10 @@
     <table>
         <tr><th>Nama Technical Director</th><td>{{ $laporan->nama_petugas }}</td></tr>
         <tr><th>Petugas PDU</th><td>{{ $laporan->pdu_nama }}</td></tr>
+        <tr>
+            <th>Asisten PDU</th>
+            <td>{{ $laporan->asisten_pdu ?? 'Tidak ada asisten PDU' }}</td>
+        </tr>
         <!-- Memecah array TX menjadi teks yang dipisahkan koma -->
         <tr>
             <th>Petugas Transmisi</th>
