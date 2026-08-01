@@ -113,28 +113,52 @@ Hidden::make('shift')
                                 
                                 ->disk('public')
                                 ->directory('evidence')
-                                ->image()->multiple()->maxFiles(2)->maxSize(10240)->directory('evidence')->required(),
+                                ->image()->multiple()->maxFiles(2)->maxSize(10240)->imageResizeMode('contain') // Mempertahankan proporsi gambar
+    ->imageResizeTargetWidth('1080') // Me-resize lebar maksimal jadi 1080px (Kualitas HD standar)
+    ->imageResizeTargetHeight('1080') // Me-resize tinggi maksimal jadi 1080px
+    // ------------------------------------------------------------
+    
+    // Opsional: Kompresi lanjutan di server (mengurangi ukuran file tanpa mengurangi dimensi)
+    ->directory('evidence')->required(),
                                 
                             FileUpload::make('ev_alat_studio')
                                 ->label('Alat & Master')
                                 
                                 ->disk('public')
                                 ->directory('evidence')
-                                ->image()->multiple()->maxFiles(2)->maxSize(10240)->directory('evidence')->required(),
+                                ->image()->multiple()->maxFiles(2)->maxSize(10240)->imageResizeMode('contain') // Mempertahankan proporsi gambar
+    ->imageResizeTargetWidth('1080') // Me-resize lebar maksimal jadi 1080px (Kualitas HD standar)
+    ->imageResizeTargetHeight('1080') // Me-resize tinggi maksimal jadi 1080px
+    // ------------------------------------------------------------
+    
+    // Opsional: Kompresi lanjutan di server (mengurangi ukuran file tanpa mengurangi dimensi)
+     ->directory('evidence')->required(),
 
                             FileUpload::make('ev_jaringan')
                                 ->label('Jaringan')
                                 
                                 ->disk('public')
                                 ->directory('evidence')
-                                ->image()->multiple()->maxFiles(2)->maxSize(10240)->directory('evidence')->required(),
+                                ->image()->multiple()->maxFiles(2)->maxSize(10240)->imageResizeMode('contain') // Mempertahankan proporsi gambar
+    ->imageResizeTargetWidth('1080') // Me-resize lebar maksimal jadi 1080px (Kualitas HD standar)
+    ->imageResizeTargetHeight('1080') // Me-resize tinggi maksimal jadi 1080px
+    // ------------------------------------------------------------
+    
+    // Opsional: Kompresi lanjutan di server (mengurangi ukuran file tanpa mengurangi dimensi)
+     ->directory('evidence')->required(),
 
                             FileUpload::make('ev_jalur_av')
                                 ->label('Jalur AV')
                                 
                                 ->disk('public')
                                 ->directory('evidence')
-                                ->image()->multiple()->maxFiles(2)->maxSize(10240)->directory('evidence')->required(),
+                                ->image()->multiple()->maxFiles(2)->maxSize(10240)->imageResizeMode('contain') // Mempertahankan proporsi gambar
+    ->imageResizeTargetWidth('1080') // Me-resize lebar maksimal jadi 1080px (Kualitas HD standar)
+    ->imageResizeTargetHeight('1080') // Me-resize tinggi maksimal jadi 1080px
+    // ------------------------------------------------------------
+    
+    // Opsional: Kompresi lanjutan di server (mengurangi ukuran file tanpa mengurangi dimensi)
+     ->directory('evidence')->required(),
                         ])->columns(2), // Berjajar rapi 2x2 di sebelah kanan
 
                     // ------------------------------------------
@@ -169,7 +193,11 @@ Hidden::make('shift')
                                 ->label('Evidence Kendala')
                                 ->disk('public')
                                 ->directory('evidence')
-                                ->image()->multiple()->maxFiles(2)->maxSize(10240)->directory('evidence')
+                                ->image()->multiple()->maxFiles(2)->maxSize(10240)->imageResizeMode('contain') // Mempertahankan proporsi gambar
+    ->imageResizeTargetWidth('1080') // Me-resize lebar maksimal jadi 1080px (Kualitas HD standar)
+    ->imageResizeTargetHeight('1080') // Me-resize tinggi maksimal jadi 1080px
+   
+     ->directory('evidence')
                                 ->visible(fn (Get $get): bool => $get('pra_kendala') == '1') // Ubah === menjadi ==
                                 ->columnSpanFull(),
                                 
