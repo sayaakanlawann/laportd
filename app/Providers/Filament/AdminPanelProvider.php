@@ -21,6 +21,9 @@ use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use App\Http\Middleware\BouncerAdmin;
 
+// --- TAMBAHKAN BARIS INI UNTUK MEMANGGIL NAVIGATION ITEM ---
+use Filament\Navigation\NavigationItem; 
+
 class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
@@ -32,12 +35,12 @@ class AdminPanelProvider extends PanelProvider
             ->login()
             ->sidebarCollapsibleOnDesktop()
             ->brandLogo(asset('logo-tvri.png'))
-            ->favicon(asset('logo-tvri.png')) // Ganti dengan nama file SVG Abang di public
+            ->favicon(asset('logo-tvri.png')) 
             ->brandLogoHeight('3rem')
-            ->brandName('TD Report - TVRI Kalsel') // <--- Tambah nama aplikasi
-            ->defaultThemeMode(ThemeMode::Dark)    // <--- Paksa mode gelap
+            ->brandName('TD Report - TVRI Kalsel') 
+            ->defaultThemeMode(ThemeMode::Dark)    
             ->colors([
-                'primary' => Color::hex('#3B82F6'), // <--- Ubah warna primer jadi biru
+                'primary' => Color::hex('#3B82F6'), 
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
@@ -49,10 +52,26 @@ class AdminPanelProvider extends PanelProvider
             ->widgets([
                 AccountWidget::class,
                 \App\Filament\Widgets\AnalyticsWidget::class,
-                
-                
-        
             ])
+            
+            // --- TAMBAHKAN BLOK KODE INI UNTUK LINK EKSTERNAL ---
+            ->navigationItems([
+                NavigationItem::make('Rundown')
+                    ->url('https://datastudio.google.com/u/0/reporting/88988b59-171c-41dd-85b9-ea29dce40337/page/p_a4l0p9bqzc?s=pVafbh6gEqw')
+                    ->icon('heroicon-o-document-text')
+                    ->group('Tautan Eksternal')
+                    ->sort(10)
+                    ->openUrlInNewTab(),
+
+                NavigationItem::make('Jadwal Petugas TX')
+                    ->url('https://shiftingtx-kalsel.lanjung-tvrikalsel.id')
+                    ->icon('heroicon-o-calendar-days')
+                    ->group('Tautan Eksternal')
+                    ->sort(11)
+                    ->openUrlInNewTab(),
+            ])
+            // -----------------------------------------------------
+
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
@@ -66,7 +85,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
-                BouncerAdmin::class, // <-- PASANG SATPAM DI SINI
+                BouncerAdmin::class, 
             ]);
     }
 }

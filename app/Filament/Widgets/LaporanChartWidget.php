@@ -11,7 +11,7 @@ class LaporanChartWidget extends ChartWidget
 {
     protected ?string $heading = 'Statistik Laporan (6 Bulan Terakhir)';
     protected static ?int $sort = 3; 
-    protected int | string | array $columnSpan = 'full'; 
+    protected int | string | array $columnSpan = 1; 
 
     protected function getData(): array
     {
@@ -45,12 +45,12 @@ class LaporanChartWidget extends ChartWidget
                     'data' => $dataPerBulan,
                     // 1. FILL KACA: Warna sangat transparan (Opacity 0.2)
                     'backgroundColor' => [
-                        'rgba(59, 130, 246, 0.2)',   // Biru
-                        'rgba(168, 85, 247, 0.2)',   // Ungu
-                        'rgba(236, 72, 153, 0.2)',   // Pink
-                        'rgba(244, 63, 94, 0.2)',    // Merah Muda
-                        'rgba(249, 115, 22, 0.2)',   // Orange
-                        'rgba(16, 185, 129, 0.2)',   // Hijau
+                        'rgba(59, 131, 246, 0.96)',   // Biru
+                        'rgba(169, 85, 247, 0.94)',   // Ungu
+                        'rgba(236, 72, 154, 0.94)',   // Pink
+                        'rgba(244, 63, 93, 0.95)',    // Merah Muda
+                        'rgba(249, 116, 22, 0.93)',   // Orange
+                        'rgba(16, 185, 129, 0.94)',   // Hijau
                     ],
                     // 2. EFEK GLOW / PINGGIRAN KACA: Warna solid terang (Opacity 1.0)
                     'borderColor' => [
@@ -70,9 +70,13 @@ class LaporanChartWidget extends ChartWidget
                         'rgba(249, 115, 22, 0.4)',
                         'rgba(16, 185, 129, 0.4)',
                     ],
-                    'borderWidth' => 2, // Ketebalan bingkai kaca
-                    'borderRadius' => 8, // Ujung melengkung mulus ala UI modern
-                    'borderSkipped' => false, // Memastikan garis bawah juga ikut digambar agar efek kacanya penuh
+                    'borderColor' => '#ffffff',
+                    'borderWidth' => 2,
+                    
+                    // --- KUNCI BAR KURUS: Batasi ketebalan maksimal bar ---
+                    'barThickness' => 15,      // Paksa bar menjadi kurus (15px)
+                    'maxBarThickness' => 20,
+                    'borderRadius' => 4,    // Memastikan garis bawah juga ikut digambar agar efek kacanya penuh
                 ],
             ],
             'labels' => $labelBulan,

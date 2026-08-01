@@ -19,6 +19,7 @@ use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Filament\Navigation\NavigationItem; 
 
 class TdPanelProvider extends PanelProvider
 {
@@ -48,7 +49,23 @@ class TdPanelProvider extends PanelProvider
                 AccountWidget::class,
                 \App\Filament\Widgets\AnalyticsWidget::class,
                 
-        
+            
+            ])
+            // --- TAMBAHKAN BLOK KODE INI UNTUK LINK EKSTERNAL ---
+            ->navigationItems([
+                NavigationItem::make('Rundown')
+                    ->url('https://datastudio.google.com/u/0/reporting/88988b59-171c-41dd-85b9-ea29dce40337/page/p_a4l0p9bqzc?s=pVafbh6gEqw')
+                    ->icon('heroicon-o-document-text')
+                    ->group('Tautan Eksternal')
+                    ->sort(10)
+                    ->openUrlInNewTab(),
+
+                NavigationItem::make('Jadwal Petugas TX')
+                    ->url('https://shiftingtx-kalsel.lanjung-tvrikalsel.id')
+                    ->icon('heroicon-o-calendar-days')
+                    ->group('Tautan Eksternal')
+                    ->sort(11)
+                    ->openUrlInNewTab(),
             ])
             ->middleware([
                 EncryptCookies::class,
