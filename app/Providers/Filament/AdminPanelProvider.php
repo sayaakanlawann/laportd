@@ -20,6 +20,7 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use App\Http\Middleware\BouncerAdmin;
+use App\Filament\Pages\CustomEditProfile;
 
 // --- TAMBAHKAN BARIS INI UNTUK MEMANGGIL NAVIGATION ITEM ---
 use Filament\Navigation\NavigationItem; 
@@ -33,6 +34,7 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
+            ->profile(CustomEditProfile::class)
             ->sidebarCollapsibleOnDesktop()
             ->brandLogo(asset('logo-tvri.png'))
             ->favicon(asset('logo-tvri.png')) 
