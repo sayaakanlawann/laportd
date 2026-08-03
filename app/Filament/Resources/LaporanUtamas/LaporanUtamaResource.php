@@ -54,6 +54,19 @@ class LaporanUtamaResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+        ->modifyQueryUsing(function ($query) {
+            $user = auth()->user();
+            
+            // 1. HANYA tampilkan laporan yang sudah FINAL
+            $query->where('status', 'final');
+            
+            // 2. Jika bukan admin, hanya lihat miliknya saja
+            if ($user->role !== 'admin' && $user->email !== 'noa@dev.id') {
+                $query->where('nama_petugas', $user->name);
+            }
+            
+            return $query;
+        })
             // 1. PERUBAHAN PERTAMA: Mematikan custom recordUrl agar baris tabel 
             // saat diklik kembali membuka form Edit bawaan Filament, bukan custom blade.
             // ->recordUrl(fn ($record): string => "/laporan/{$record->id}/edit")

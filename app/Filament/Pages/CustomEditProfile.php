@@ -20,7 +20,10 @@ class CustomEditProfile extends BaseEditProfile
                     ->directory('avatars')
                     ->disk('public')
                     ->maxSize(2048) // Maksimal 2MB
-                    ->alignCenter(),
+                    ->alignCenter()
+                    ->imageResizeMode('cover')
+    ->imageResizeTargetWidth('150')  // Resolusi dikecilkan jadi 150x150 pixel saja
+    ->imageResizeTargetHeight('150'),
 
                 // Bawaan Filament: Nama, Email, dan Password
                 $this->getNameFormComponent(),

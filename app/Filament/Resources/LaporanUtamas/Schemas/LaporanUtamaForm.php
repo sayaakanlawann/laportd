@@ -16,6 +16,7 @@ use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Hidden;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 
 class LaporanUtamaForm
@@ -47,6 +48,8 @@ Hidden::make('shift')
                             DatePicker::make('tanggal_tugas')
                                 ->label('Tanggal Tugas')
                                 ->default(now())
+                                ->live(onBlur: true)
+    ->afterStateUpdated(fn ($state, $record, $component) => $record?->update([$component->getName() => $state]))
                                 ->required()
                                 ->columnSpanFull(),
                             
@@ -55,7 +58,9 @@ Hidden::make('shift')
     ->formatStateUsing(fn ($state) => $state ?? auth()->user()->name)
     ->disabled()
  
-    ->dehydrated() // Wajib ada agar nilai tetap tersimpan ke database saat disubmit
+    ->dehydrated()
+    ->live(onBlur: true)
+    ->afterStateUpdated(fn ($state, $record, $component) => $record?->update([$component->getName() => $state])) // Wajib ada agar nilai tetap tersimpan ke database saat disubmit
     ->required()
     ->columnSpanFull(),
 
@@ -63,13 +68,15 @@ Hidden::make('shift')
                                 ->label('Petugas PDU')
                                 ->options(Petugas::where('is_aktif', true)->where('jabatan_utama', 'PDU')->pluck('nama', 'nama'))
                                 ->searchable()
-                                ->live()
+                                ->live(onBlur: true)
+    ->afterStateUpdated(fn ($state, $record, $component) => $record?->update([$component->getName() => $state]))
                                 ->required()
                                 ->columnSpanFull(),
                                 Select::make('asisten_pdu')
     ->label('Asisten PDU')
     ->placeholder('Pilih asisten (Opsional)')
-    ->live()
+    ->live(onBlur: true)
+    ->afterStateUpdated(fn ($state, $record, $component) => $record?->update([$component->getName() => $state]))
     ->options(
         // Query langsung ke tabel user berdasarkan jabatan. 
         // Silakan ganti 'asisten_pdu' dengan nama role yang sebenarnya ada di database Abang
@@ -81,7 +88,8 @@ Hidden::make('shift')
 
                             Select::make('kru_lengkap')
                                 ->label('Kehadiran Kru')
-                                ->live()
+                                ->live(onBlur: true)
+    ->afterStateUpdated(fn ($state, $record, $component) => $record?->update([$component->getName() => $state]))
                                 ->options([
                                     '1' => 'Lengkap',
                                     '0' => 'Tidak Lengkap',
@@ -97,7 +105,8 @@ Hidden::make('shift')
             ->pluck('nama', 'nama')
     )
     ->multiple()
-    ->live()
+    ->live(onBlur: true)
+    ->afterStateUpdated(fn ($state, $record, $component) => $record?->update([$component->getName() => $state]))
     ->searchable()
     ->required()
     ->columnSpanFull(),
@@ -110,7 +119,28 @@ Hidden::make('shift')
                         ->schema([
                             FileUpload::make('evidence_sebelum_siaran')
                                 ->label('Sebelum Siaran')
-                                
+                                ->live()
+->afterStateUpdated(function ($state, $record, $component) {
+        if (!$record) return;
+
+        $paths = [];
+        // Cek satu-satu file yang diupload (karena multiple)
+        foreach (\Illuminate\Support\Arr::wrap($state) as $file) {
+            if (is_string($file)) {
+                // Jika file sudah berupa teks path (file lama)
+                $paths[] = $file;
+            } elseif ($file instanceof TemporaryUploadedFile) {
+                // Jika file baru, simpan permanen ke folder 'evidence' di disk 'public'
+                $paths[] = $file->store('evidence', 'public');
+            }
+        }
+
+        // 1. Simpan path yang benar ke database
+        $record->update([$component->getName() => $paths]);
+
+        // 2. Beritahu Filament agar sinkron dengan file yang baru dipindah
+        $component->state($paths);
+    })                                
                                 ->disk('public')
                                 ->directory('evidence')
                                 ->image()->multiple()->maxFiles(2)->maxSize(10240)->imageResizeMode('contain') // Mempertahankan proporsi gambar
@@ -123,8 +153,29 @@ Hidden::make('shift')
                                 
                             FileUpload::make('ev_alat_studio')
                                 ->label('Alat & Master')
-                                
-                                ->disk('public')
+                                ->live()
+->afterStateUpdated(function ($state, $record, $component) {
+        if (!$record) return;
+
+        $paths = [];
+        // Cek satu-satu file yang diupload (karena multiple)
+        foreach (\Illuminate\Support\Arr::wrap($state) as $file) {
+            if (is_string($file)) {
+                // Jika file sudah berupa teks path (file lama)
+                $paths[] = $file;
+            } elseif ($file instanceof TemporaryUploadedFile) {
+                // Jika file baru, simpan permanen ke folder 'evidence' di disk 'public'
+                $paths[] = $file->store('evidence', 'public');
+            }
+        }
+
+        // 1. Simpan path yang benar ke database
+        $record->update([$component->getName() => $paths]);
+
+        // 2. Beritahu Filament agar sinkron dengan file yang baru dipindah
+        $component->state($paths);
+    })
+                                    ->disk('public')
                                 ->directory('evidence')
                                 ->image()->multiple()->maxFiles(2)->maxSize(10240)->imageResizeMode('contain') // Mempertahankan proporsi gambar
     ->imageResizeTargetWidth('1080') // Me-resize lebar maksimal jadi 1080px (Kualitas HD standar)
@@ -136,8 +187,28 @@ Hidden::make('shift')
 
                             FileUpload::make('ev_jaringan')
                                 ->label('Jaringan')
-                                
-                                ->disk('public')
+                                ->live()
+->afterStateUpdated(function ($state, $record, $component) {
+        if (!$record) return;
+
+        $paths = [];
+        // Cek satu-satu file yang diupload (karena multiple)
+        foreach (\Illuminate\Support\Arr::wrap($state) as $file) {
+            if (is_string($file)) {
+                // Jika file sudah berupa teks path (file lama)
+                $paths[] = $file;
+            } elseif ($file instanceof TemporaryUploadedFile) {
+                // Jika file baru, simpan permanen ke folder 'evidence' di disk 'public'
+                $paths[] = $file->store('evidence', 'public');
+            }
+        }
+
+        // 1. Simpan path yang benar ke database
+        $record->update([$component->getName() => $paths]);
+
+        // 2. Beritahu Filament agar sinkron dengan file yang baru dipindah
+        $component->state($paths);
+    })                                ->disk('public')
                                 ->directory('evidence')
                                 ->image()->multiple()->maxFiles(2)->maxSize(10240)->imageResizeMode('contain') // Mempertahankan proporsi gambar
     ->imageResizeTargetWidth('1080') // Me-resize lebar maksimal jadi 1080px (Kualitas HD standar)
@@ -149,8 +220,28 @@ Hidden::make('shift')
 
                             FileUpload::make('ev_jalur_av')
                                 ->label('Jalur AV')
-                                
-                                ->disk('public')
+                                ->live()
+->afterStateUpdated(function ($state, $record, $component) {
+        if (!$record) return;
+
+        $paths = [];
+        // Cek satu-satu file yang diupload (karena multiple)
+        foreach (\Illuminate\Support\Arr::wrap($state) as $file) {
+            if (is_string($file)) {
+                // Jika file sudah berupa teks path (file lama)
+                $paths[] = $file;
+            } elseif ($file instanceof TemporaryUploadedFile) {
+                // Jika file baru, simpan permanen ke folder 'evidence' di disk 'public'
+                $paths[] = $file->store('evidence', 'public');
+            }
+        }
+
+        // 1. Simpan path yang benar ke database
+        $record->update([$component->getName() => $paths]);
+
+        // 2. Beritahu Filament agar sinkron dengan file yang baru dipindah
+        $component->state($paths);
+    })                                ->disk('public')
                                 ->directory('evidence')
                                 ->image()->multiple()->maxFiles(2)->maxSize(10240)->imageResizeMode('contain') // Mempertahankan proporsi gambar
     ->imageResizeTargetWidth('1080') // Me-resize lebar maksimal jadi 1080px (Kualitas HD standar)
@@ -177,7 +268,8 @@ Hidden::make('shift')
                                     '1' => 'Ada Kendala',
                                 ])
                                 ->default('0') // Berikan nilai default agar state awal tidak null
-                                ->live() 
+                                ->live(onBlur: true)
+    ->afterStateUpdated(fn ($state, $record, $component) => $record?->update([$component->getName() => $state]))
                                 ->required()
                                 ->columnSpanFull(),
 
@@ -185,6 +277,7 @@ Hidden::make('shift')
                                 ->label('Keterangan Kendala')
                                 ->rows(2)
                                 ->live(onBlur: true)
+    ->afterStateUpdated(fn ($state, $record, $component) => $record?->update([$component->getName() => $state]))
                                 ->visible(fn (Get $get): bool => $get('pra_kendala') == '1') // Ubah === menjadi ==
                                 ->required(fn (Get $get): bool => $get('pra_kendala') == '1') // Ubah === menjadi ==
                                 ->columnSpanFull(),
@@ -198,8 +291,30 @@ Hidden::make('shift')
     ->imageResizeTargetHeight('1080') // Me-resize tinggi maksimal jadi 1080px
    
      ->directory('evidence')
-                                ->visible(fn (Get $get): bool => $get('pra_kendala') == '1') // Ubah === menjadi ==
-                                ->columnSpanFull(),
+                                ->visible(fn (Get $get): bool => $get('pra_kendala') == '1')
+                                ->live()
+->afterStateUpdated(function ($state, $record, $component) {
+        if (!$record) return;
+
+        $paths = [];
+        // Cek satu-satu file yang diupload (karena multiple)
+        foreach (\Illuminate\Support\Arr::wrap($state) as $file) {
+            if (is_string($file)) {
+                // Jika file sudah berupa teks path (file lama)
+                $paths[] = $file;
+            } elseif ($file instanceof TemporaryUploadedFile) {
+                // Jika file baru, simpan permanen ke folder 'evidence' di disk 'public'
+                $paths[] = $file->store('evidence', 'public');
+            }
+        }
+
+        // 1. Simpan path yang benar ke database
+        $record->update([$component->getName() => $paths]);
+
+        // 2. Beritahu Filament agar sinkron dengan file yang baru dipindah
+        $component->state($paths);
+    })
+                                    ->columnSpanFull(),
                                 
                         ]),
 
@@ -219,6 +334,8 @@ Hidden::make('shift')
                             ->validationMessages([
                                  'min' => 'Log jam tayang wajib diisi minimal 4 program siaran.',
                                 ])
+                                ->live(onBlur: true)
+    ->afterStateUpdated(fn ($state, $record, $component) => $record?->update([$component->getName() => $state]))
                             ->columnSpanFull() 
                             ->columns(5)
                             ->schema([
@@ -250,7 +367,8 @@ Hidden::make('shift')
 
         return $query->pluck('jam_tayang_default', 'jam_tayang_default');
     })
-    ->live() 
+    ->live(onBlur: true)
+    ->afterStateUpdated(fn ($state, $record, $component) => $record?->update([$component->getName() => $state]))
     ->required()
     ->afterStateHydrated(function (Select $component, $record) {
         if ($record && $record->jam_tayang && $record->jam_selesai) {
@@ -288,12 +406,14 @@ Hidden::make('shift')
                                             $opsi['Other'] = 'Lainnya (Ketik Manual)...';
                                             return $opsi;
                                         })
-                                        ->live()
+                                        ->live(onBlur: true)
+    ->afterStateUpdated(fn ($state, $record, $component) => $record?->update([$component->getName() => $state]))
                                         ->required(),
 
                                     TextInput::make('nama_program_custom')
                                         ->label('Ketik Baru')
-                                        ->live()
+                                        ->live(onBlur: true)
+    ->afterStateUpdated(fn ($state, $record, $component) => $record?->update([$component->getName() => $state]))
                                         // Ubah juga type hinting di sini untuk jaga-jaga
                                         ->visible(fn ($get): bool => $get('nama_program') === 'Other')
                                         ->required(fn ($get): bool => $get('nama_program') === 'Other'),
@@ -315,12 +435,14 @@ Hidden::make('shift')
                                         'Playback' => 'Playback',
                                     ])
                                     ->searchable()
-                                    ->live()
+                                    ->live(onBlur: true)
+    ->afterStateUpdated(fn ($state, $record, $component) => $record?->update([$component->getName() => $state]))
                                     ->required(),
 
                                 Select::make('status_siaran')
                                     ->label('Kendala Siaran')
-                                    ->live()
+                                    ->live(onBlur: true)
+    ->afterStateUpdated(fn ($state, $record, $component) => $record?->update([$component->getName() => $state]))
                                     ->options([
                                         'Aman' => 'Aman',
                                         'Audio' => 'Audio',
@@ -331,7 +453,8 @@ Hidden::make('shift')
 
                                 TextInput::make('catatan_kendala')
                                     ->label('Detil Kendala')
-                                    ->live(onBlur: true),
+                                    ->live(onBlur: true)
+    ->afterStateUpdated(fn ($state, $record, $component) => $record?->update([$component->getName() => $state])),
                                     
                             ])
                     ])->columnSpanFull(),
@@ -345,6 +468,7 @@ Hidden::make('shift')
                         ->label('Kesimpulan Akhir')
                         ->rows(3)
                         ->live(onBlur: true)
+    ->afterStateUpdated(fn ($state, $record, $component) => $record?->update([$component->getName() => $state]))
                         ->required()
                         ->columnSpanFull(),
                 ])->columnSpanFull(),
