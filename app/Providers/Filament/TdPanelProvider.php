@@ -33,6 +33,7 @@ class TdPanelProvider extends PanelProvider
             ->brandLogo(asset('logo-tvri.png'))
             ->favicon(asset('logo-tvri.png')) // Ganti dengan nama file SVG Abang di public
             ->brandLogoHeight('3rem')
+            ->darkModeBrandLogo(asset('logo-tvridark.png'))
             ->brandName('TD Report - TVRI Kalsel') // <--- Tambah nama aplikasi
             ->defaultThemeMode(ThemeMode::Dark)    // <--- Paksa mode gelap
             ->colors([

@@ -37,6 +37,8 @@ class AdminPanelProvider extends PanelProvider
             ->profile(CustomEditProfile::class)
             ->sidebarCollapsibleOnDesktop()
             ->brandLogo(asset('logo-tvri.png'))
+            ->darkModeBrandLogo(asset('logo-tvridark.png'))
+            
             ->favicon(asset('logo-tvri.png')) 
             ->brandLogoHeight('3rem')
             ->brandName('TD Report - TVRI Kalsel') 

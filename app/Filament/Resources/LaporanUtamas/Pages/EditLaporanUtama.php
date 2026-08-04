@@ -13,6 +13,7 @@ class EditLaporanUtama extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            // PERBAIKAN DI SINI: Tambahkan Actions\ di depannya
             Actions\DeleteAction::make(),
         ];
     }

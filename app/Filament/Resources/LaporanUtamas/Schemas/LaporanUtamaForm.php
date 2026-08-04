@@ -12,6 +12,7 @@ use Filament\Schemas\Components\Group;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\FileUpload;
+
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -329,8 +330,8 @@ Hidden::make('shift')
                             ->relationship('siarans')
                             ->label('') 
                             ->addActionLabel('+ Tambah Program')
-                            ->defaultItems(4) // Otomatis memunculkan 4 baris saat buat laporan baru
-                            ->minItems(4)
+                            ->minItems(fn (Get $get): int => $get('shift') === 'pagi' ? 3 : 4)
+    ->defaultItems(fn (Get $get): int => $get('shift') === 'pagi' ? 3 : 4)
                             ->validationMessages([
                                  'min' => 'Log jam tayang wajib diisi minimal 4 program siaran.',
                                 ])
