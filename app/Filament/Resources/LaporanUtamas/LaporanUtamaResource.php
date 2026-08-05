@@ -23,6 +23,8 @@ use Filament\Actions\EditAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\BulkAction;
+
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Schemas\Components\Section;
 use Filament\Infolists\Components\TextEntry;
@@ -321,6 +323,20 @@ class LaporanUtamaResource extends Resource
             ->bulkActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
+                    BulkAction::make('draftize_final')
+            ->label('Draft Laporan')
+            ->icon('heroicon-o-check-circle')
+            ->color('warning')
+            ->requiresConfirmation() // Memunculkan pop-up konfirmasi
+            ->modalHeading('Draft Laporan Terpilih')
+            ->modalDescription('Apakah Anda yakin ingin draft laporan yang dipilih ini?')
+            ->modalSubmitActionLabel('Ya, Draft Semua')
+            ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
+                // Looping semua data yang dicentang, lalu ubah statusnya
+                $records->each(function ($record) {
+                    $record->update(['status' => 'draft']);
+                });
+            }),
                 ]),
             ])
             ->defaultSort('created_at', 'desc');
