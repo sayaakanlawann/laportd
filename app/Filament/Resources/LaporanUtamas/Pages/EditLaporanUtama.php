@@ -5,7 +5,7 @@ namespace App\Filament\Resources\LaporanUtamas\Pages;
 use App\Filament\Resources\LaporanUtamas\LaporanUtamaResource;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
-
+use Filament\Notifications\Notification;
 class EditLaporanUtama extends EditRecord
 {
     protected static string $resource = LaporanUtamaResource::class;
@@ -41,6 +41,30 @@ class EditLaporanUtama extends EditRecord
     // 3. Langsung kembali ke halaman tabel setelah klik Final
     protected function getRedirectUrl(): ?string
     {
-        return $this->getResource()::getUrl('index');
+            return $this->getResource()::getUrl('index');
+
     }
+    protected function afterSave(): void
+{
+    if ($this->record->status === 'final') {
+        $this->js("
+            localStorage.removeItem('draft-siarans-{$this->record->id}');
+        ");
+    }
+}
+public function updated($name, $value): void
+{
+    // Jangan autosave ketika user sedang menambah,
+    // menghapus, atau mengurutkan item repeater.
+    if (str_starts_with($name, 'mountedActions')) {
+        return;
+    }
+
+    if (str_contains($name, 'siarans')) {
+        $this->save(
+            shouldRedirect: false,
+            shouldSendSavedNotification: false,
+        );
+    }
+}
 }

@@ -329,15 +329,17 @@ Hidden::make('shift')
                         Repeater::make('siarans')
                             ->relationship('siarans')
                             ->label('') 
+                            
+                            ->required()
                             ->addActionLabel('+ Tambah Program')
                             ->minItems(fn (Get $get): int => $get('shift') === 'pagi' ? 3 : 4)
     ->defaultItems(fn (Get $get): int => $get('shift') === 'pagi' ? 3 : 4)
                             ->validationMessages([
-                                 'min' => 'Log jam tayang wajib diisi minimal 4 program siaran.',
+                                 'min' => 'Log jam tayang wajib diisi minimal :min program siaran.',
                                 ])
-                                ->live(onBlur: true)
-    ->afterStateUpdated(fn ($state, $record, $component) => $record?->update([$component->getName() => $state]))
-                            ->columnSpanFull() 
+                                
+                                
+                                ->columnSpanFull() 
                             ->columns(5)
                             ->schema([
                                 
@@ -369,8 +371,7 @@ Hidden::make('shift')
         return $query->pluck('jam_tayang_default', 'jam_tayang_default');
     })
     ->live(onBlur: true)
-    ->afterStateUpdated(fn ($state, $record, $component) => $record?->update([$component->getName() => $state]))
-    ->required()
+        ->required()
     ->afterStateHydrated(function (Select $component, $record) {
         if ($record && $record->jam_tayang && $record->jam_selesai) {
             $jamMulai = \Carbon\Carbon::parse($record->jam_tayang)->format('H:i');
@@ -408,14 +409,12 @@ Hidden::make('shift')
                                             return $opsi;
                                         })
                                         ->live(onBlur: true)
-    ->afterStateUpdated(fn ($state, $record, $component) => $record?->update([$component->getName() => $state]))
-                                        ->required(),
+                                            ->required(),
 
                                     TextInput::make('nama_program_custom')
                                         ->label('Ketik Baru')
                                         ->live(onBlur: true)
-    ->afterStateUpdated(fn ($state, $record, $component) => $record?->update([$component->getName() => $state]))
-                                        // Ubah juga type hinting di sini untuk jaga-jaga
+                                            // Ubah juga type hinting di sini untuk jaga-jaga
                                         ->visible(fn ($get): bool => $get('nama_program') === 'Other')
                                         ->required(fn ($get): bool => $get('nama_program') === 'Other'),
                                 ]),
@@ -437,14 +436,12 @@ Hidden::make('shift')
                                     ])
                                     ->searchable()
                                     ->live(onBlur: true)
-    ->afterStateUpdated(fn ($state, $record, $component) => $record?->update([$component->getName() => $state]))
-                                    ->required(),
+                                        ->required(),
 
                                 Select::make('status_siaran')
                                     ->label('Kendala Siaran')
                                     ->live(onBlur: true)
-    ->afterStateUpdated(fn ($state, $record, $component) => $record?->update([$component->getName() => $state]))
-                                    ->options([
+                                        ->options([
                                         'Aman' => 'Aman',
                                         'Audio' => 'Audio',
                                         'Video' => 'Video',
@@ -455,7 +452,7 @@ Hidden::make('shift')
                                 TextInput::make('catatan_kendala')
                                     ->label('Detil Kendala')
                                     ->live(onBlur: true)
-    ->afterStateUpdated(fn ($state, $record, $component) => $record?->update([$component->getName() => $state])),
+    
                                     
                             ])
                     ])->columnSpanFull(),

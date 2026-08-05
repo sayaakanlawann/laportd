@@ -69,7 +69,7 @@
             <tr style="background-color: #f2f2f2;">
                 <th style="border: 1px solid #ccc; padding: 8px;">Waktu Siaran</th>
                 <th style="border: 1px solid #ccc; padding: 8px;">Program & Jenis Acara</th>
-                <th style="border: 1px solid #ccc; padding: 8px;">Status</th>
+                <th style="border: 1px solid #ccc; padding: 8px;">Kendala</th>
                 <th style="border: 1px solid #ccc; padding: 8px;">Catatan Kendala</th>
             </tr>
         </thead>

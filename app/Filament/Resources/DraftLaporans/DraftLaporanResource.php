@@ -13,6 +13,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\BulkActionGroup;
+use Filament\Actions\BulkAction;
 use Filament\Actions\DeleteBulkAction;
 class DraftLaporanResource extends Resource
 {
@@ -79,6 +80,20 @@ class DraftLaporanResource extends Resource
             ])
             ->bulkActions([
                 BulkActionGroup::make([
+                    BulkAction::make('finalize_draft')
+            ->label('Submit/Finalize Draft')
+            ->icon('heroicon-o-check-circle')
+            ->color('success')
+            ->requiresConfirmation() // Memunculkan pop-up konfirmasi
+            ->modalHeading('Finalisasi Laporan Terpilih')
+            ->modalDescription('Apakah Anda yakin ingin menyelesaikan dan men-submit semua draft laporan yang dipilih ini?')
+            ->modalSubmitActionLabel('Ya, Submit Semua')
+            ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
+                // Looping semua data yang dicentang, lalu ubah statusnya
+                $records->each(function ($record) {
+                    $record->update(['status' => 'final']);
+                });
+            }),
                     DeleteBulkAction::make(),
                 ]),
             ]);
