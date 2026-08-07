@@ -23,7 +23,7 @@ class ProgramSiaranResource extends Resource
     // --- TAMBAHAN BEDAH MIKRO: UI SIDEBAR ---
     protected static ?string $modelLabel = 'Program Siaran';
     protected static ?string $pluralModelLabel = 'Program Acara';
-    protected static string | \UnitEnum | null $navigationGroup = '⚙️ Master Data';
+    protected static string | \UnitEnum | null $navigationGroup = 'Master Data';
     protected static string |\BackedEnum | null $navigationIcon = 'heroicon-o-play-circle'; // Ikon Play
     protected static ?int $navigationSort = 3;
     // --- TAMBAHAN BEDAH MIKRO: GEMBOK OTORISASI ---

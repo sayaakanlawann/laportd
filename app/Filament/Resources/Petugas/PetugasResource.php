@@ -22,7 +22,7 @@ class PetugasResource extends Resource
     // --- TAMBAHAN BEDAH MIKRO: UI SIDEBAR ---
     protected static ?string $modelLabel = 'Data Petugas';
     protected static ?string $pluralModelLabel = 'Petugas & Kru';
-    protected static string | \UnitEnum | null $navigationGroup = '⚙️ Master Data';
+    protected static string | \UnitEnum | null $navigationGroup = 'Master Data';
     protected static string |\BackedEnum | null $navigationIcon = 'heroicon-o-users'; // Ikon User
     protected static ?int $navigationSort = 2;
     public static function canViewAny(): bool
