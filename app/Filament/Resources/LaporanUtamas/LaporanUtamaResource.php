@@ -81,8 +81,22 @@ class LaporanUtamaResource extends Resource
                         'sore' => 'indigo',
                         default => 'gray',
                     }),
+                    // 1. Timestamp Waktu Pembuatan (Kapan diklik "Buat Laporan Baru")
+            TextColumn::make('created_at')
+                ->label('Dibuat Pada')
+                ->dateTime('d M Y, H:i') // Output contoh: 07 Aug 2026, 17:51
+                ->sortable() // Agar bisa diurutkan dari yang terbaru/terlama
+                ->toggleable(isToggledHiddenByDefault: false), // Bisa disembunyikan oleh user
+
+            // 2. (Opsional) Timestamp Waktu Terakhir Diedit (Kapan diklik Submit Final)
+            TextColumn::make('updated_at')
+                ->label('Terakhir Diedit')
+                ->dateTime('d M Y, H:i')
+                ->sortable()
+                ->toggleable(isToggledHiddenByDefault: true), // Disembunyikan secara default agar tabel tidak kepenuhan
+        
                 TextColumn::make('tanggal_tugas')
-                    ->label('Tanggal')
+                    ->label('Tanggal Tugas')
                     ->date('d M Y')
                     ->sortable(),
                 TextColumn::make('nama_petugas')
