@@ -269,7 +269,7 @@ Hidden::make('shift')
                                     '1' => 'Ada Kendala',
                                 ])
                                 ->default('0') // Berikan nilai default agar state awal tidak null
-                                ->live(onBlur: true)
+                                ->live()
     ->afterStateUpdated(fn ($state, $record, $component) => $record?->update([$component->getName() => $state]))
                                 ->required()
                                 ->columnSpanFull(),
@@ -327,131 +327,155 @@ Hidden::make('shift')
                 Fieldset::make('Log Jam Tayang Siaran')
                     ->schema([
                         Repeater::make('siarans')
-                            ->relationship('siarans')
-                            ->label('') 
-                            
-                            ->required()
-                            ->addActionLabel('+ Tambah Program')
-                            ->minItems(fn (Get $get): int => $get('shift') === 'pagi' ? 3 : 4)
+    ->relationship('siarans')
+    ->label('')
+    ->required()
+    ->addActionLabel('+ Tambah Program')
+    ->minItems(fn (Get $get): int => $get('shift') === 'pagi' ? 3 : 4)
     ->defaultItems(fn (Get $get): int => $get('shift') === 'pagi' ? 3 : 4)
-                            ->validationMessages([
-                                 'min' => 'Log jam tayang wajib diisi minimal :min program siaran.',
-                                ])
-                                
-                                
-                                ->columnSpanFull() 
-                            ->columns(5)
-                            ->schema([
-                                
-                                Select::make('jam_tayang')
-    ->label('Waktu Siaran')
-    ->options(function ($livewire) {
-        // Ambil nilai shift secara paksa langsung dari array state Livewire
-        // Cara ini paling kebal terhadap refresh AJAX di dalam Repeater.
-        $shiftAktif = data_get($livewire->data, 'shift');
-
-        // Fallback tambahan (untuk jaga-jaga saat halaman baru pertama kali dimuat)
-        if (!$shiftAktif) {
-            $shiftAktif = request()->query('shift');
+    
+    // ========================================================
+    // 1. KETIKA MEMUAT DATA DARI DATABASE (EDIT/REFRESH)
+    // ========================================================
+    ->mutateRelationshipDataBeforeFillUsing(function (array $data): array {
+        // A. Kembalikan format jam tayang agar cocok dengan dropdown
+        if (!empty($data['jam_tayang']) && !empty($data['jam_selesai'])) {
+            $jamMulai = \Carbon\Carbon::parse($data['jam_tayang'])->format('H:i');
+            $jamSelesai = \Carbon\Carbon::parse($data['jam_selesai'])->format('H:i');
+            $data['jam_tayang'] = "{$jamMulai}|{$jamSelesai}";
         }
 
-        $query = ProgramSiaran::where('is_aktif', true);
-
-        // Filter ketat berdasarkan shift
-        if ($shiftAktif === 'pagi') {
-            $query->whereTime('jam_tayang_default', '>=', '09:00:00')
-                  ->whereTime('jam_tayang_default', '<=', '12:00:00');
-        } elseif ($shiftAktif === 'sore') {
-            $query->where(function($q) {
-                $q->whereTime('jam_tayang_default', '<', '09:00:00')
-                  ->orWhereTime('jam_tayang_default', '>', '12:00:00');
-            });
-        }
-
-        return $query->pluck('jam_tayang_default', 'jam_tayang_default');
-    })
-    ->live(onBlur: true)
-        ->required()
-    ->afterStateHydrated(function (Select $component, $record) {
-        if ($record && $record->jam_tayang && $record->jam_selesai) {
-            $jamMulai = \Carbon\Carbon::parse($record->jam_tayang)->format('H:i');
-            $jamSelesai = \Carbon\Carbon::parse($record->jam_selesai)->format('H:i');
-            $component->state("{$jamMulai}|{$jamSelesai}");
-        }
-    })
-    ->dehydrateStateUsing(function ($state, $set) {
-        if ($state && str_contains($state, '|')) {
-            $pecah = explode('|', $state);
+        // B. Cegah Dropdown Reset: Jika nama program tidak ada di master data, paksa pilih "Other"
+        if (!empty($data['nama_program'])) {
+            $isKnown = \App\Models\ProgramSiaran::where('nama_program', $data['nama_program'])->exists();
             
-            if (is_callable($set)) {
-                $set('jam_selesai', trim($pecah[1]));
+            if (!$isKnown) {
+                // Pindahkan nama dari DB ke inputan teks 'Ketik Baru'
+                $data['nama_program_custom'] = $data['nama_program']; 
+                // Setel dropdown kembali ke 'Other'
+                $data['nama_program'] = 'Other'; 
             }
-
-            return trim($pecah[0]);
         }
-        return $state;
-    }),
+        return $data;
+    })
 
-    Hidden::make('jam_selesai'),
+    // ========================================================
+    // 2. KETIKA MENYIMPAN KE DATABASE (SUBMIT FINAL)
+    // ========================================================
+    ->mutateRelationshipDataBeforeCreateUsing(function (array $data): array {
+        if (!empty($data['jam_tayang']) && str_contains($data['jam_tayang'], '|')) {
+            $pecah = explode('|', $data['jam_tayang']);
+            $data['jam_tayang'] = trim($pecah[0]);
+            $data['jam_selesai'] = trim($pecah[1]);
+        }
+        if (isset($data['nama_program']) && $data['nama_program'] === 'Other') {
+            $data['nama_program'] = $data['nama_program_custom'] ?? 'Program Tidak Diketahui';
+        }
+        unset($data['nama_program_custom']); // Hapus sebelum ditolak MySQL
+        return $data;
+    })
+    ->mutateRelationshipDataBeforeSaveUsing(function (array $data): array {
+        if (!empty($data['jam_tayang']) && str_contains($data['jam_tayang'], '|')) {
+            $pecah = explode('|', $data['jam_tayang']);
+            $data['jam_tayang'] = trim($pecah[0]);
+            $data['jam_selesai'] = trim($pecah[1]);
+        }
+        if (isset($data['nama_program']) && $data['nama_program'] === 'Other') {
+            $data['nama_program'] = $data['nama_program_custom'] ?? 'Program Tidak Diketahui';
+        }
+        unset($data['nama_program_custom']); // Hapus sebelum ditolak MySQL
+        return $data;
+    })
+    
+    // ... Pengaturan schema kolom di bawahnya ...
+    ->columnSpanFull()
+    ->columns(5)
+    ->schema([
+        
+        Select::make('jam_tayang')
+            ->label('Waktu Siaran')
+            ->options(function ($livewire) {
+                $shiftAktif = data_get($livewire->data, 'shift') ?? request()->query('shift');
+                $query = ProgramSiaran::where('is_aktif', true);
 
-                                Group::make()->schema([
-                                    Select::make('nama_program')
-                                        ->label('Program')
-                                        // Hapus type hinting (Get $get) menjadi ($get) saja agar aman dari konflik namespace
-                                        ->options(function ($get) {
-                                            $waktu = $get('jam_tayang'); 
-                                            if (! $waktu) return [];
-                                            
-                                            $jamMulai = str_contains($waktu, '|') ? explode('|', $waktu)[0] : $waktu;
-                                            
-                                            $opsi = ProgramSiaran::where('jam_tayang_default', 'like', "%{$jamMulai}%")->pluck('nama_program', 'nama_program')->toArray();
-                                            $opsi['Other'] = 'Lainnya (Ketik Manual)...';
-                                            return $opsi;
-                                        })
-                                        ->live(onBlur: true)
-                                            ->required(),
+                if ($shiftAktif === 'pagi') {
+                    $query->whereTime('jam_tayang_default', '>=', '09:00:00')
+                          ->whereTime('jam_tayang_default', '<=', '12:00:00');
+                } elseif ($shiftAktif === 'sore') {
+                    $query->where(function($q) {
+                        $q->whereTime('jam_tayang_default', '<', '09:00:00')
+                          ->orWhereTime('jam_tayang_default', '>', '12:00:00');
+                    });
+                }
+                return $query->pluck('jam_tayang_default', 'jam_tayang_default');
+            })
+            ->live()
+            ->required(),
+            
+            // ❌ HAPUS ->dehydrateStateUsing DI SINI KARENA MERUSAK FORM SAAT ONBLUR
 
-                                    TextInput::make('nama_program_custom')
-                                        ->label('Ketik Baru')
-                                        ->live(onBlur: true)
-                                            // Ubah juga type hinting di sini untuk jaga-jaga
-                                        ->visible(fn ($get): bool => $get('nama_program') === 'Other')
-                                        ->required(fn ($get): bool => $get('nama_program') === 'Other'),
-                                ]),
+        Hidden::make('jam_selesai'),
 
-                                Select::make('jenis_acara')
-                                    ->label('Jenis')
-                                    ->options([
-                                        'Live Studio 1' => 'Live Studio 1',
-                                        'Live Studio 2' => 'Live Studio 2',
-                                        'Live Studio 3' => 'Live Studio 3',
-                                        'Relay' => 'Relay',
-                                        'Relay Jakarta' => 'Relay Jakarta',
-                                        'Relay Kalbar' => 'Relay Kalbar',
-                                        'Relay Kaltim' => 'Relay Kaltim',
-                                        'Relay Kalteng' => 'Relay Kalteng',
-                                        'Relay Kaltara' => 'Relay Kaltara',
-                                        'Record' => 'Record',
-                                        'Playback' => 'Playback',
-                                    ])
-                                    ->searchable()
-                                    ->live(onBlur: true)
-                                        ->required(),
+        Group::make()->schema([
+            Select::make('nama_program')
+                ->label('Program')
+                ->options(function ($get) {
+                    $waktu = $get('jam_tayang'); 
+                    if (! $waktu) return [];
+                    
+                    $jamMulai = str_contains($waktu, '|') ? explode('|', $waktu)[0] : $waktu;
+                    $opsi = ProgramSiaran::where('jam_tayang_default', 'like', "%{$jamMulai}%")->pluck('nama_program', 'nama_program')->toArray();
+                    $opsi['Other'] = 'Lainnya (Ketik Manual)...';
+                    return $opsi;
+                })
+                ->live() // Wajib agar Ketik Baru muncul
+                ->required(),
 
-                                Select::make('status_siaran')
-                                    ->label('Kendala Siaran')
-                                    ->live(onBlur: true)
-                                        ->options([
-                                        'Aman' => 'Aman',
-                                        'Audio' => 'Audio',
-                                        'Video' => 'Video',
-                                        'Perangkat Lainnya' => 'Perangkat Lainnya',
-                                    ])
-                                    ->required(),
+            TextInput::make('nama_program_custom')
+                ->label('Ketik Baru')
+                ->visible(fn ($get): bool => $get('nama_program') === 'Other')
+                ->required(fn ($get): bool => $get('nama_program') === 'Other')
+                ->live(onBlur: true), // ✅ SEKARANG INI AMAN DIGUNAKAN
+        ]),
 
-                                TextInput::make('catatan_kendala')
-                                    ->label('Detil Kendala')
-                                    ->live(onBlur: true)
+        // ... Lanjutkan kolom jenis acara & kendala seperti sebelumnya ...
+
+Select::make('jenis_acara')
+    ->label('Jenis')
+    ->options([
+        'Live Studio 1' => 'Live Studio 1',
+        'Live Studio 2' => 'Live Studio 2',
+        'Live Studio 3' => 'Live Studio 3',
+        'Relay' => 'Relay',
+        'Relay Jakarta' => 'Relay Jakarta',
+        'Relay Kalbar' => 'Relay Kalbar',
+        'Relay Kaltim' => 'Relay Kaltim',
+        'Relay Kalteng' => 'Relay Kalteng',
+        'Relay Kaltara' => 'Relay Kaltara',
+        'Record' => 'Record',
+        'Playback' => 'Playback',
+    ])
+    ->searchable()
+    // ->live() <--- DIHAPUS SAJA: Karena ini bukan trigger yang memunculkan inputan lain
+    ->required(),
+
+Select::make('status_siaran')
+    ->label('Kendala Siaran')
+    ->live() // <--- INI SUDAH BENAR: Sebagai trigger untuk detil kendala
+    ->options([
+        'Aman' => 'Aman',
+        'Audio' => 'Audio',
+        'Video' => 'Video',
+        'Perangkat Lainnya' => 'Perangkat Lainnya',
+    ])
+    ->required(),
+
+TextInput::make('catatan_kendala')
+    ->label('Detil Kendala')
+    // ->live(onBlur: true) <--- DIHAPUS SAJA: Sepertinya tadi tersisa di sini
+    ->visible(fn ($get): bool => $get('status_siaran') !== 'Aman') // <--- KEMBALIKAN LOGIKA INI (Sepertinya terpotong)
+    ->required(fn ($get): bool => $get('status_siaran') !== 'Aman')
+    ->live(onBlur: true),
     
                                     
                             ])
