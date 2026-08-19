@@ -12,6 +12,7 @@ use Filament\Schemas\Components\Group;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\FileUpload;
+use Illuminate\Support\Arr;
 
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Textarea;
@@ -121,136 +122,266 @@ Hidden::make('shift')
                             FileUpload::make('evidence_sebelum_siaran')
                                 ->label('Sebelum Siaran')
                                 ->live()
-->afterStateUpdated(function ($state, $record, $component) {
+->rules([
+        fn ($record) => function (string $attribute, $value, Closure $fail) use ($record) {
+            // Karena multiple(), value bisa berupa array, jadi kita loop
+            $files = Arr::wrap($value);
+            foreach ($files as $file) {
+                if ($file instanceof TemporaryUploadedFile) {
+                    $hash = md5_file($file->getRealPath());
+
+                    // Cek apakah hash ini ada di laporan FINAL lain (bukan laporan ini sendiri)
+                    $isDuplicate = \App\Models\LaporanUtama::where('status', 'final')
+                        ->where('id', '!=', $record?->id ?? 0) // Abaikan id laporan yang sedang diedit
+                        ->where('semua_hash_foto', 'like', '%' . $hash . '%') // Cek brankas hash
+                        ->exists();
+
+                    if ($isDuplicate) {
+                        $fail('KECURANGAN TERDETEKSI: Foto ini (atau foto yang mirip) sudah pernah digunakan di laporan lain!');
+                    }
+                }
+            }
+        },
+    ])
+
+    // 🔥 MODIFIKASI AFTER STATE UPDATED ABANG 🔥
+    ->afterStateUpdated(function ($state, $record, $component) {
         if (!$record) return;
 
         $paths = [];
-        // Cek satu-satu file yang diupload (karena multiple)
-        foreach (\Illuminate\Support\Arr::wrap($state) as $file) {
+        $newHashes = []; // Array untuk menampung sidik jari dari foto baru
+
+        foreach (Arr::wrap($state) as $file) {
             if (is_string($file)) {
-                // Jika file sudah berupa teks path (file lama)
                 $paths[] = $file;
             } elseif ($file instanceof TemporaryUploadedFile) {
-                // Jika file baru, simpan permanen ke folder 'evidence' di disk 'public'
+                // Ambil sidik jari DULU, baru simpan filenya
+                $newHashes[] = md5_file($file->getRealPath());
                 $paths[] = $file->store('evidence', 'public');
             }
         }
 
-        // 1. Simpan path yang benar ke database
-        $record->update([$component->getName() => $paths]);
+        // Ambil isi brankas hash lama, lalu gabungkan dengan hash yang baru
+        $existingHashes = $record->semua_hash_foto ? explode(',', $record->semua_hash_foto) : [];
+        $mergedHashes = array_unique(array_filter(array_merge($existingHashes, $newHashes)));
+
+        // 1. Simpan path gambar DAN isi brankas hash terbaru ke database
+        $record->update([
+            $component->getName() => $paths,
+            'semua_hash_foto' => implode(',', $mergedHashes) // Simpan dalam bentuk teks pisah koma
+        ]);
 
         // 2. Beritahu Filament agar sinkron dengan file yang baru dipindah
         $component->state($paths);
     })                                
-                                ->disk('public')
-                                ->directory('evidence')
-                                ->image()->multiple()->maxFiles(2)->maxSize(10240)->imageResizeMode('contain') // Mempertahankan proporsi gambar
-    ->imageResizeTargetWidth('1080') // Me-resize lebar maksimal jadi 1080px (Kualitas HD standar)
-    ->imageResizeTargetHeight('1080') // Me-resize tinggi maksimal jadi 1080px
-    // ------------------------------------------------------------
-    
-    // Opsional: Kompresi lanjutan di server (mengurangi ukuran file tanpa mengurangi dimensi)
-    ->directory('evidence')->required(),
+    ->disk('public')
+    ->directory('evidence')
+    ->image()
+    ->multiple()
+    ->maxFiles(2)
+    ->maxSize(10240)
+    ->imageResizeMode('contain') 
+    ->imageResizeTargetWidth('1080') 
+    ->imageResizeTargetHeight('1080') 
+    ->required(),
                                 
                             FileUpload::make('ev_alat_studio')
                                 ->label('Alat & Master')
                                 ->live()
-->afterStateUpdated(function ($state, $record, $component) {
+->rules([
+        fn ($record) => function (string $attribute, $value, Closure $fail) use ($record) {
+            // Karena multiple(), value bisa berupa array, jadi kita loop
+            $files = Arr::wrap($value);
+            foreach ($files as $file) {
+                if ($file instanceof TemporaryUploadedFile) {
+                    $hash = md5_file($file->getRealPath());
+
+                    // Cek apakah hash ini ada di laporan FINAL lain (bukan laporan ini sendiri)
+                    $isDuplicate = \App\Models\LaporanUtama::where('status', 'final')
+                        ->where('id', '!=', $record?->id ?? 0) // Abaikan id laporan yang sedang diedit
+                        ->where('semua_hash_foto', 'like', '%' . $hash . '%') // Cek brankas hash
+                        ->exists();
+
+                    if ($isDuplicate) {
+                        $fail('KECURANGAN TERDETEKSI: Foto ini (atau foto yang mirip) sudah pernah digunakan di laporan lain!');
+                    }
+                }
+            }
+        },
+    ])
+
+    // 🔥 MODIFIKASI AFTER STATE UPDATED ABANG 🔥
+    ->afterStateUpdated(function ($state, $record, $component) {
         if (!$record) return;
 
         $paths = [];
-        // Cek satu-satu file yang diupload (karena multiple)
-        foreach (\Illuminate\Support\Arr::wrap($state) as $file) {
+        $newHashes = []; // Array untuk menampung sidik jari dari foto baru
+
+        foreach (Arr::wrap($state) as $file) {
             if (is_string($file)) {
-                // Jika file sudah berupa teks path (file lama)
                 $paths[] = $file;
             } elseif ($file instanceof TemporaryUploadedFile) {
-                // Jika file baru, simpan permanen ke folder 'evidence' di disk 'public'
+                // Ambil sidik jari DULU, baru simpan filenya
+                $newHashes[] = md5_file($file->getRealPath());
                 $paths[] = $file->store('evidence', 'public');
             }
         }
 
-        // 1. Simpan path yang benar ke database
-        $record->update([$component->getName() => $paths]);
+        // Ambil isi brankas hash lama, lalu gabungkan dengan hash yang baru
+        $existingHashes = $record->semua_hash_foto ? explode(',', $record->semua_hash_foto) : [];
+        $mergedHashes = array_unique(array_filter(array_merge($existingHashes, $newHashes)));
+
+        // 1. Simpan path gambar DAN isi brankas hash terbaru ke database
+        $record->update([
+            $component->getName() => $paths,
+            'semua_hash_foto' => implode(',', $mergedHashes) // Simpan dalam bentuk teks pisah koma
+        ]);
 
         // 2. Beritahu Filament agar sinkron dengan file yang baru dipindah
         $component->state($paths);
-    })
-                                    ->disk('public')
-                                ->directory('evidence')
-                                ->image()->multiple()->maxFiles(2)->maxSize(10240)->imageResizeMode('contain') // Mempertahankan proporsi gambar
-    ->imageResizeTargetWidth('1080') // Me-resize lebar maksimal jadi 1080px (Kualitas HD standar)
-    ->imageResizeTargetHeight('1080') // Me-resize tinggi maksimal jadi 1080px
-    // ------------------------------------------------------------
-    
-    // Opsional: Kompresi lanjutan di server (mengurangi ukuran file tanpa mengurangi dimensi)
-     ->directory('evidence')->required(),
+    })                                
+    ->disk('public')
+    ->directory('evidence')
+    ->image()
+    ->multiple()
+    ->maxFiles(2)
+    ->maxSize(10240)
+    ->imageResizeMode('contain') 
+    ->imageResizeTargetWidth('1080') 
+    ->imageResizeTargetHeight('1080') 
+    ->required(),
 
                             FileUpload::make('ev_jaringan')
                                 ->label('Jaringan')
                                 ->live()
-->afterStateUpdated(function ($state, $record, $component) {
+->rules([
+        fn ($record) => function (string $attribute, $value, Closure $fail) use ($record) {
+            // Karena multiple(), value bisa berupa array, jadi kita loop
+            $files = Arr::wrap($value);
+            foreach ($files as $file) {
+                if ($file instanceof TemporaryUploadedFile) {
+                    $hash = md5_file($file->getRealPath());
+
+                    // Cek apakah hash ini ada di laporan FINAL lain (bukan laporan ini sendiri)
+                    $isDuplicate = \App\Models\LaporanUtama::where('status', 'final')
+                        ->where('id', '!=', $record?->id ?? 0) // Abaikan id laporan yang sedang diedit
+                        ->where('semua_hash_foto', 'like', '%' . $hash . '%') // Cek brankas hash
+                        ->exists();
+
+                    if ($isDuplicate) {
+                        $fail('KECURANGAN TERDETEKSI: Foto ini (atau foto yang mirip) sudah pernah digunakan di laporan lain!');
+                    }
+                }
+            }
+        },
+    ])
+
+    // 🔥 MODIFIKASI AFTER STATE UPDATED ABANG 🔥
+    ->afterStateUpdated(function ($state, $record, $component) {
         if (!$record) return;
 
         $paths = [];
-        // Cek satu-satu file yang diupload (karena multiple)
-        foreach (\Illuminate\Support\Arr::wrap($state) as $file) {
+        $newHashes = []; // Array untuk menampung sidik jari dari foto baru
+
+        foreach (Arr::wrap($state) as $file) {
             if (is_string($file)) {
-                // Jika file sudah berupa teks path (file lama)
                 $paths[] = $file;
             } elseif ($file instanceof TemporaryUploadedFile) {
-                // Jika file baru, simpan permanen ke folder 'evidence' di disk 'public'
+                // Ambil sidik jari DULU, baru simpan filenya
+                $newHashes[] = md5_file($file->getRealPath());
                 $paths[] = $file->store('evidence', 'public');
             }
         }
 
-        // 1. Simpan path yang benar ke database
-        $record->update([$component->getName() => $paths]);
+        // Ambil isi brankas hash lama, lalu gabungkan dengan hash yang baru
+        $existingHashes = $record->semua_hash_foto ? explode(',', $record->semua_hash_foto) : [];
+        $mergedHashes = array_unique(array_filter(array_merge($existingHashes, $newHashes)));
+
+        // 1. Simpan path gambar DAN isi brankas hash terbaru ke database
+        $record->update([
+            $component->getName() => $paths,
+            'semua_hash_foto' => implode(',', $mergedHashes) // Simpan dalam bentuk teks pisah koma
+        ]);
 
         // 2. Beritahu Filament agar sinkron dengan file yang baru dipindah
         $component->state($paths);
-    })                                ->disk('public')
-                                ->directory('evidence')
-                                ->image()->multiple()->maxFiles(2)->maxSize(10240)->imageResizeMode('contain') // Mempertahankan proporsi gambar
-    ->imageResizeTargetWidth('1080') // Me-resize lebar maksimal jadi 1080px (Kualitas HD standar)
-    ->imageResizeTargetHeight('1080') // Me-resize tinggi maksimal jadi 1080px
-    // ------------------------------------------------------------
-    
-    // Opsional: Kompresi lanjutan di server (mengurangi ukuran file tanpa mengurangi dimensi)
-     ->directory('evidence')->required(),
+    })                                
+    ->disk('public')
+    ->directory('evidence')
+    ->image()
+    ->multiple()
+    ->maxFiles(2)
+    ->maxSize(10240)
+    ->imageResizeMode('contain') 
+    ->imageResizeTargetWidth('1080') 
+    ->imageResizeTargetHeight('1080') 
+    ->required(),
 
                             FileUpload::make('ev_jalur_av')
                                 ->label('Jalur AV')
                                 ->live()
-->afterStateUpdated(function ($state, $record, $component) {
+->rules([
+        fn ($record) => function (string $attribute, $value, Closure $fail) use ($record) {
+            // Karena multiple(), value bisa berupa array, jadi kita loop
+            $files = Arr::wrap($value);
+            foreach ($files as $file) {
+                if ($file instanceof TemporaryUploadedFile) {
+                    $hash = md5_file($file->getRealPath());
+
+                    // Cek apakah hash ini ada di laporan FINAL lain (bukan laporan ini sendiri)
+                    $isDuplicate = \App\Models\LaporanUtama::where('status', 'final')
+                        ->where('id', '!=', $record?->id ?? 0) // Abaikan id laporan yang sedang diedit
+                        ->where('semua_hash_foto', 'like', '%' . $hash . '%') // Cek brankas hash
+                        ->exists();
+
+                    if ($isDuplicate) {
+                        $fail('KECURANGAN TERDETEKSI: Foto ini (atau foto yang mirip) sudah pernah digunakan di laporan lain!');
+                    }
+                }
+            }
+        },
+    ])
+
+    // 🔥 MODIFIKASI AFTER STATE UPDATED ABANG 🔥
+    ->afterStateUpdated(function ($state, $record, $component) {
         if (!$record) return;
 
         $paths = [];
-        // Cek satu-satu file yang diupload (karena multiple)
-        foreach (\Illuminate\Support\Arr::wrap($state) as $file) {
+        $newHashes = []; // Array untuk menampung sidik jari dari foto baru
+
+        foreach (Arr::wrap($state) as $file) {
             if (is_string($file)) {
-                // Jika file sudah berupa teks path (file lama)
                 $paths[] = $file;
             } elseif ($file instanceof TemporaryUploadedFile) {
-                // Jika file baru, simpan permanen ke folder 'evidence' di disk 'public'
+                // Ambil sidik jari DULU, baru simpan filenya
+                $newHashes[] = md5_file($file->getRealPath());
                 $paths[] = $file->store('evidence', 'public');
             }
         }
 
-        // 1. Simpan path yang benar ke database
-        $record->update([$component->getName() => $paths]);
+        // Ambil isi brankas hash lama, lalu gabungkan dengan hash yang baru
+        $existingHashes = $record->semua_hash_foto ? explode(',', $record->semua_hash_foto) : [];
+        $mergedHashes = array_unique(array_filter(array_merge($existingHashes, $newHashes)));
+
+        // 1. Simpan path gambar DAN isi brankas hash terbaru ke database
+        $record->update([
+            $component->getName() => $paths,
+            'semua_hash_foto' => implode(',', $mergedHashes) // Simpan dalam bentuk teks pisah koma
+        ]);
 
         // 2. Beritahu Filament agar sinkron dengan file yang baru dipindah
         $component->state($paths);
-    })                                ->disk('public')
-                                ->directory('evidence')
-                                ->image()->multiple()->maxFiles(2)->maxSize(10240)->imageResizeMode('contain') // Mempertahankan proporsi gambar
-    ->imageResizeTargetWidth('1080') // Me-resize lebar maksimal jadi 1080px (Kualitas HD standar)
-    ->imageResizeTargetHeight('1080') // Me-resize tinggi maksimal jadi 1080px
-    // ------------------------------------------------------------
-    
-    // Opsional: Kompresi lanjutan di server (mengurangi ukuran file tanpa mengurangi dimensi)
-     ->directory('evidence')->required(),
+    })                                
+    ->disk('public')
+    ->directory('evidence')
+    ->image()
+    ->multiple()
+    ->maxFiles(2)
+    ->maxSize(10240)
+    ->imageResizeMode('contain') 
+    ->imageResizeTargetWidth('1080') 
+    ->imageResizeTargetHeight('1080') 
+    ->required(),
                         ])->columns(2), // Berjajar rapi 2x2 di sebelah kanan
 
                     // ------------------------------------------

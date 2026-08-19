@@ -3,13 +3,14 @@
 namespace App\Filament\Pages;
 
 use App\Models\LaporanUtama;
-use App\Models\User; // Tambahkan ini untuk mengambil daftar TD
+use App\Models\User; 
 use Filament\Pages\Page;
 use Filament\Tables\Table;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Actions\Action; // Tambahkan ini untuk tombol teguran
+use Filament\Actions\Action; // <-- Ini yang benar untuk aksi Tabel
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 
@@ -26,7 +27,6 @@ class MonitoringShift extends Page implements HasTable
 
     public static function canAccess(): bool
     {
-        // Pastikan ini sesuai dengan sistem role Abang
         return in_array(auth()->user()->role, ['admin', 'dev']); 
     }
 
@@ -48,13 +48,12 @@ class MonitoringShift extends Page implements HasTable
                     ->date('d M Y')
                     ->sortable(),
 
-                // --- LOGIKA BARU SHIFT PAGI ---
                 TextColumn::make('shift_pagi')
                     ->label('Shift Pagi')
                     ->getStateUsing(function ($record) {
                         $cek = LaporanUtama::where('tanggal_tugas', $record->tanggal_tugas)
                             ->where('shift', 'pagi')
-                            ->whereIn('status', ['final', 'alpha']) // Cari yang final atau alpha
+                            ->whereIn('status', ['final', 'alpha'])
                             ->first();
                         
                         if ($cek) {
@@ -68,7 +67,6 @@ class MonitoringShift extends Page implements HasTable
                     ->color(fn (string $state): string => ($state === 'Kosong' || str_starts_with($state, 'Belum Input:')) ? 'danger' : 'success')
                     ->icon(fn (string $state): string => ($state === 'Kosong' || str_starts_with($state, 'Belum Input:')) ? 'heroicon-m-x-circle' : 'heroicon-m-check-circle'),
 
-                // --- LOGIKA BARU SHIFT SORE ---
                 TextColumn::make('shift_sore')
                     ->label('Shift Sore')
                     ->getStateUsing(function ($record) {
@@ -88,7 +86,72 @@ class MonitoringShift extends Page implements HasTable
                     ->color(fn (string $state): string => ($state === 'Kosong' || str_starts_with($state, 'Belum Input:')) ? 'danger' : 'success')
                     ->icon(fn (string $state): string => ($state === 'Kosong' || str_starts_with($state, 'Belum Input:')) ? 'heroicon-m-x-circle' : 'heroicon-m-check-circle'),
             ])
-            // --- TOMBOL AKSI TANDAI ALPHA ---
+
+            // 🔥 TOMBOL TEGURAN MANUAL DI POJOK KANAN ATAS TABEL (Untuk tanggal yang blank total) 🔥
+            ->headerActions([
+                Action::make('teguran_manual_header')
+                    ->label('Buat Teguran Manual')
+                    ->icon('heroicon-o-plus-circle')
+                    ->color('danger')
+                    ->form([
+                        DatePicker::make('tanggal_tugas')
+                            ->label('Tanggal Laporan (Yang Kosong)')
+                            ->required()
+                            ->maxDate(now())
+                            ->default(now()),
+
+                        Select::make('shift')
+                            ->label('Pilih Shift')
+                            ->options([
+                                'pagi' => 'Shift Pagi',
+                                'sore' => 'Shift Sore',
+                            ])
+                            ->required(),
+
+                        Select::make('nama_petugas')
+                            ->label('Nama TD yang Bolos')
+                            ->options(User::pluck('name', 'name')->toArray())
+                            ->searchable()
+                            ->required(),
+                    ])
+                    ->action(function (array $data) {
+                        $sudahAda = LaporanUtama::where('tanggal_tugas', $data['tanggal_tugas'])
+                            ->where('shift', $data['shift'])
+                            ->first();
+
+                        if ($sudahAda) {
+                            if ($sudahAda->status === 'final') {
+                                Notification::make()
+                                    ->title('Gagal: Shift ini sudah diisi laporan final!')
+                                    ->danger()
+                                    ->send();
+                                return;
+                            } else {
+                                $sudahAda->update(['nama_petugas' => $data['nama_petugas']]);
+                            }
+                        } else {
+                            LaporanUtama::create([
+                                'status'          => 'alpha',
+                                'tanggal_tugas'   => $data['tanggal_tugas'],
+                                'shift'           => $data['shift'],
+                                'nama_petugas'    => $data['nama_petugas'],
+                                
+                                'pdu_nama'        => '-',
+                                'tx_petugas_nama' => '-',
+                                'pra_kendala'     => 0,
+                                'kru_lengkap'     => 0,
+                                'kesimpulan'      => '-',
+                            ]);
+                        }
+
+                        Notification::make()
+                            ->title('Teguran berhasil dikirim & baris baru ditambahkan!')
+                            ->success()
+                            ->send();
+                    })
+            ])
+
+            // --- TOMBOL AKSI DI DALAM BARIS TABEL (Untuk shift yang 1 isi, 1 kosong) ---
             ->actions([
                 Action::make('tandai_alpha')
                     ->label('Tandai TD Alpha')
@@ -106,13 +169,11 @@ class MonitoringShift extends Page implements HasTable
 
                         Select::make('nama_petugas')
                             ->label('Nama TD yang Bertugas')
-                            // Mengambil data nama dari tabel users (Sesuaikan jika nama Model User Abang berbeda)
                             ->options(User::pluck('name', 'name')->toArray())
                             ->searchable()
                             ->required(),
                     ])
                     ->action(function ($record, array $data) {
-                        // 1. Cek apakah shift ini sebenarnya sudah diisi (mencegah Admin salah tandai)
                         $sudahAda = LaporanUtama::where('tanggal_tugas', $record->tanggal_tugas)
                             ->where('shift', $data['shift'])
                             ->where('status', 'final')
@@ -126,7 +187,6 @@ class MonitoringShift extends Page implements HasTable
                             return;
                         }
 
-                        // 2. Cek apakah sudah ditandai sebelumnya, jika ya, cukup update namanya
                         $teguranLama = LaporanUtama::where('tanggal_tugas', $record->tanggal_tugas)
                             ->where('shift', $data['shift'])
                             ->where('status', 'alpha')
@@ -135,14 +195,12 @@ class MonitoringShift extends Page implements HasTable
                         if ($teguranLama) {
                             $teguranLama->update(['nama_petugas' => $data['nama_petugas']]);
                         } else {
-                            // 3. Buat data laporan "bayangan" dengan status 'alpha'
                             LaporanUtama::create([
                                 'status'          => 'alpha',
                                 'tanggal_tugas'   => $record->tanggal_tugas,
                                 'shift'           => $data['shift'],
                                 'nama_petugas'    => $data['nama_petugas'],
                                 
-                                // Isi default bawaan agar database tidak protes
                                 'pdu_nama'        => '-',
                                 'tx_petugas_nama' => '-',
                                 'pra_kendala'     => 0,
