@@ -459,7 +459,7 @@ Hidden::make('shift')
                     ->schema([
                         Repeater::make('siarans')
     ->relationship('siarans')
-    ->label('')
+    ->label('Siaran')
     ->required()
     ->addActionLabel('+ Tambah Program')
     ->minItems(fn (Get $get): int => $get('shift') === 'pagi' ? 3 : 4)
