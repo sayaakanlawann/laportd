@@ -524,24 +524,37 @@ Hidden::make('shift')
     ->schema([
         
         Select::make('jam_tayang')
-            ->label('Waktu Siaran')
-            ->options(function ($livewire) {
-                $shiftAktif = data_get($livewire->data, 'shift') ?? request()->query('shift');
-                $query = ProgramSiaran::where('is_aktif', true);
+    ->label('Waktu Siaran')
+    ->options(function ($livewire) {
+        $shiftAktif = data_get($livewire->data, 'shift') ?? request()->query('shift');
+        $query = ProgramSiaran::where('is_aktif', true);
 
-                if ($shiftAktif === 'pagi') {
-                    $query->whereTime('jam_tayang_default', '>=', '09:00:00')
-                          ->whereTime('jam_tayang_default', '<=', '12:00:00');
-                } elseif ($shiftAktif === 'sore') {
-                    $query->where(function($q) {
-                        $q->whereTime('jam_tayang_default', '<', '09:00:00')
-                          ->orWhereTime('jam_tayang_default', '>', '12:00:00');
-                    });
-                }
-                return $query->pluck('jam_tayang_default', 'jam_tayang_default');
-            })
-            ->live()
-            ->required(),
+        if ($shiftAktif === 'pagi') {
+            $query->whereTime('jam_tayang_default', '>=', '09:00:00')
+                  ->whereTime('jam_tayang_default', '<=', '12:00:00');
+        } elseif ($shiftAktif === 'sore') {
+            $query->where(function($q) {
+                $q->whereTime('jam_tayang_default', '<', '09:00:00')
+                  ->orWhereTime('jam_tayang_default', '>', '12:00:00');
+            });
+        }
+        
+        // --- MODIFIKASI DIMULAI DI SINI ---
+        // 1. Tarik data asli ke dalam bentuk Array
+        $jadwalAsli = $query->pluck('jam_tayang_default', 'jam_tayang_default')->toArray();
+        
+        $opsiRapi = [];
+        
+        // 2. Ubah tampilannya
+        foreach ($jadwalAsli as $key => $value) {
+            $opsiRapi[$key] = str_replace('|', ' - ', $value);
+        }
+        
+        return $opsiRapi;
+        // --- MODIFIKASI SELESAI ---
+    })
+    ->live()
+    ->required(),
             
             // ❌ HAPUS ->dehydrateStateUsing DI SINI KARENA MERUSAK FORM SAAT ONBLUR
 
