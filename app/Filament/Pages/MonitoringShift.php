@@ -54,6 +54,7 @@ class MonitoringShift extends Page implements HasTable
                         $cek = LaporanUtama::where('tanggal_tugas', $record->tanggal_tugas)
                             ->where('shift', 'pagi')
                             ->whereIn('status', ['final', 'alpha'])
+                            ->orderBy('status', 'desc') // 🔥 TAMBAHKAN INI: Paksa baca 'final' duluan!
                             ->first();
                         
                         if ($cek) {
@@ -73,6 +74,7 @@ class MonitoringShift extends Page implements HasTable
                         $cek = LaporanUtama::where('tanggal_tugas', $record->tanggal_tugas)
                             ->where('shift', 'sore')
                             ->whereIn('status', ['final', 'alpha'])
+                            ->orderBy('status', 'desc') // 🔥 TAMBAHKAN INI JUGA!
                             ->first();
                         
                         if ($cek) {

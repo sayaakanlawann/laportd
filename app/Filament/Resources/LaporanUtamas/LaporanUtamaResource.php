@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Filament\Resources\LaporanUtamas;
+
 use Filament\Forms;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Tables;
@@ -8,15 +9,12 @@ use App\Filament\Resources\LaporanUtamas\Pages\CreateLaporanUtama;
 use App\Filament\Resources\LaporanUtamas\Pages\EditLaporanUtama;
 use App\Filament\Resources\LaporanUtamas\Pages\ListLaporanUtamas;
 use App\Filament\Resources\LaporanUtamas\Schemas\LaporanUtamaForm;
-use App\Filament\Resources\LaporanUtamas\Tables\LaporanUtamasTable;
 use App\Models\LaporanUtama;
-use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Support\HtmlString;
-use Filament\Actions\Action;
+use Filament\Actions\Action as TableAction;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Filament\Actions\EditAction;
@@ -25,15 +23,8 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\BulkAction;
 
-use Filament\Tables\Columns\ImageColumn;
-use Filament\Schemas\Components\Section;
-use Filament\Infolists\Components\TextEntry;
-use Filament\Infolists\Components\ImageEntry;
-use Filament\Infolists\Components\RepeatableEntry;
-use Filament\Infolists\Components\IconEntry;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\IconColumn;
-
 
 class LaporanUtamaResource extends Resource
 {
@@ -43,10 +34,8 @@ class LaporanUtamaResource extends Resource
     protected static ?string $modelLabel = 'Riwayat Evidence';
     protected static ?string $pluralModelLabel = 'Riwayat Laporan TD';
     protected static string | \UnitEnum | null $navigationGroup = 'Laporan Harian';
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-document-duplicate'; // Ikon Dokumen
-    protected static ?int $navigationSort = 1; // Posisi paling atas
-
-    
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-document-duplicate'; 
+    protected static ?int $navigationSort = 1; 
 
     public static function form(Schema $schema): Schema
     {
@@ -56,22 +45,11 @@ class LaporanUtamaResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-        ->modifyQueryUsing(function ($query) {
-            $user = auth()->user();
-            
-            // 1. HANYA tampilkan laporan yang sudah FINAL
-            $query->where('status', 'final');
-            
-            // 2. Jika bukan admin, hanya lihat miliknya saja
-            if ($user->role !== 'admin' && $user->email !== 'noa@dev.id') {
-                $query->where('nama_petugas', $user->name);
-            }
-            
-            return $query;
-        })
-            // 1. PERUBAHAN PERTAMA: Mematikan custom recordUrl agar baris tabel 
-            // saat diklik kembali membuka form Edit bawaan Filament, bukan custom blade.
-            // ->recordUrl(fn ($record): string => "/laporan/{$record->id}/edit")
+            ->modifyQueryUsing(function (Builder $query) {
+                // HANYA tampilkan laporan yang sudah FINAL di etalase tabel ini.
+                // (Pembatasan hak akses nama TD sudah di-handle oleh getEloquentQuery di bawah)
+                return $query->where('status', 'final');
+            })
             ->columns([
                 TextColumn::make('shift')
                     ->label('Shift')
@@ -81,45 +59,45 @@ class LaporanUtamaResource extends Resource
                         'sore' => 'indigo',
                         default => 'gray',
                     }),
-                    // 1. Timestamp Waktu Pembuatan (Kapan diklik "Buat Laporan Baru")
-            TextColumn::make('created_at')
-                ->label('Dibuat Pada')
-                ->dateTime('d M Y, H:i') // Output contoh: 07 Aug 2026, 17:51
-                ->sortable() // Agar bisa diurutkan dari yang terbaru/terlama
-                ->toggleable(isToggledHiddenByDefault: false), // Bisa disembunyikan oleh user
+                    
+                TextColumn::make('created_at')
+                    ->label('Dibuat Pada')
+                    ->dateTime('d M Y, H:i') 
+                    ->sortable() 
+                    ->toggleable(isToggledHiddenByDefault: false), 
 
-            // 2. (Opsional) Timestamp Waktu Terakhir Diedit (Kapan diklik Submit Final)
-            TextColumn::make('updated_at')
-                ->label('Terakhir Diedit')
-                ->dateTime('d M Y, H:i')
-                ->sortable()
-                ->toggleable(isToggledHiddenByDefault: true), // Disembunyikan secara default agar tabel tidak kepenuhan
+                TextColumn::make('updated_at')
+                    ->label('Terakhir Diedit')
+                    ->dateTime('d M Y, H:i')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true), 
         
                 TextColumn::make('tanggal_tugas')
                     ->label('Tanggal Tugas')
                     ->date('d M Y')
                     ->sortable(),
+                    
                 TextColumn::make('nama_petugas')
                     ->label('TD')
                     ->searchable(),
+                    
                 TextColumn::make('pdu_nama')
                     ->label('PDU')
                     ->toggleable(isToggledHiddenByDefault: true),
                 
                 TextColumn::make('asisten_pdu')
                     ->label('Asisten PDU')
-                    ->default('Tidak ada asisten PDU') // <--- Jika null di database, kalimat ini otomatis muncul
-                    ->color(fn ($state) => $state === 'Tidak ada asisten PDU' ? 'gray' : 'primary') // Beri warna beda agar mudah dibaca
+                    ->default('Tidak ada asisten PDU') 
+                    ->color(fn ($state) => $state === 'Tidak ada asisten PDU' ? 'gray' : 'primary') 
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('tx_petugas_nama')
                     ->label('TX')
-                    
                     ->toggleable(isToggledHiddenByDefault: true),
-                // --- PERBAIKAN LOG SIARAN (MENAMPILKAN JAM, PROGRAM, STATUS & CATATAN) ---
+                    
                 TextColumn::make('log_siaran_lengkap')
                     ->label('Log Siaran')
-                    ->html() // Mengizinkan render HTML
+                    ->html() 
                     ->getStateUsing(function ($record) {
                         if ($record->siarans->isEmpty()) return '-';
                         
@@ -129,14 +107,12 @@ class LaporanUtamaResource extends Resource
                             $jamMulai = \Carbon\Carbon::parse($siaran->jam_tayang)->format('H:i');
                             $jamSelesai = \Carbon\Carbon::parse($siaran->jam_selesai)->format('H:i');
                             
-                            // Warna teks status (Hijau jika Aman, Merah jika Kendala)
                             $colorStatus = $siaran->status_siaran == 'Aman' ? 'color: #10b981;' : 'color: #ef4444;';
                             
                             $html .= "<li style='margin-bottom: 8px; border-bottom: 1px solid #334155; padding-bottom: 4px;'>";
                             $html .= "<strong style='color: #38bdf8;'>{$jamMulai} - {$jamSelesai}</strong> | {$siaran->nama_program} ";
                             $html .= "<span style='{$colorStatus} font-weight: bold; font-size: 0.75rem;'>[{$siaran->status_siaran}]</span>";
                             
-                            // Jika ada catatan kendala, tampilkan di bawahnya
                             if (!empty($siaran->catatan_kendala)) {
                                 $html .= "<br><span style='color: #fbbf24; font-size: 0.75rem;'>⚠️ Catatan: {$siaran->catatan_kendala}</span>";
                             }
@@ -147,9 +123,11 @@ class LaporanUtamaResource extends Resource
                         $html .= '</ul>';
                         return $html;
                     }),
+                    
                 IconColumn::make('kru_lengkap')
                     ->label('Kru')
                     ->boolean(),
+                    
                 IconColumn::make('pra_kendala')
                     ->label('Kendala')
                     ->boolean()
@@ -161,9 +139,8 @@ class LaporanUtamaResource extends Resource
             ->filters([
                 //
             ])
-            // --- HEADER ACTIONS: TOMBOL EXPORT EXCEL DI ATAS TABEL ---
             ->headerActions([
-                Action::make('export_excel') // <-- BERSIH! (Tanpa Tables\)
+                TableAction::make('export_excel') 
                     ->label('Export Excel')
                     ->icon('heroicon-o-document-arrow-down')
                     ->color('success')
@@ -187,8 +164,7 @@ class LaporanUtamaResource extends Resource
                     }),
             ])
             ->actions([
-                // --- 1. TOMBOL LIHAT EVIDENCE (POP-UP) ---
-                Action::make('lihat_evidence') 
+                TableAction::make('lihat_evidence') 
                     ->label('Evidence')
                     ->icon('heroicon-o-photo')
                     ->color('info')
@@ -199,7 +175,6 @@ class LaporanUtamaResource extends Resource
                     ->modalContent(function ($record): HtmlString {
                         $html = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; width: 100%;">';
                         
-                        // Helper khusus Kolom Baru (Filament) dengan label deskriptif per gambar
                         $renderFilamentImages = function($labelSection, $images) use (&$html) {
                             if (empty($images)) return;
                             
@@ -233,12 +208,8 @@ class LaporanUtamaResource extends Resource
                                     
                                     foreach ($validItems as $index => $item) {
                                         $url = str_starts_with($item['path'], 'http') ? $item['path'] : asset('storage/' . $item['path']);
-                                        
-                                        // Format label per gambar: Gambar X : [Nama Kategori] atau custom caption jika ada
                                         $imgNum = $index + 1;
-                                        $imgCaption = !empty($item['caption']) 
-                                            ? $item['caption'] 
-                                            : "Gambar {$imgNum} : {$labelSection}";
+                                        $imgCaption = !empty($item['caption']) ? $item['caption'] : "Gambar {$imgNum} : {$labelSection}";
                                         
                                         $html .= '<div style="display: flex; flex-direction: column; align-items: center; max-width: 120px;">';
                                         $html .= '<a href="' . $url . '" target="_blank"><img src="' . $url . '" style="width: 110px; height: 110px; object-fit: cover; border-radius: 6px; border: 1px solid #475569;" /></a>';
@@ -251,14 +222,12 @@ class LaporanUtamaResource extends Resource
                             }
                         };
 
-                        // 1. Render Kolom Baru Filament
                         $renderFilamentImages('Sebelum Siaran', $record->evidence_sebelum_siaran);
                         $renderFilamentImages('Alat & Master', $record->ev_alat_studio);
                         $renderFilamentImages('Jaringan', $record->ev_jaringan);
                         $renderFilamentImages('Jalur AV', $record->ev_jalur_av);
                         $renderFilamentImages('Evidence Kendala', $record->pra_ev_kendala);
 
-                        // 2. Render Data Lama
                         if (!empty($record->evidence)) {
                             $oldImg = is_string($record->evidence) ? json_decode($record->evidence, true) ?? $record->evidence : $record->evidence;
                             $oldImgArray = is_array($oldImg) ? $oldImg : [$oldImg];
@@ -319,42 +288,35 @@ class LaporanUtamaResource extends Resource
                         return new HtmlString($html);
                     }),
 
-                // --- 2. TOMBOL UNDUH PDF ---
-                Action::make('download_pdf') // <-- BERSIH!
+                TableAction::make('download_pdf') 
                     ->label('PDF')
                     ->icon('heroicon-o-document-text')
                     ->color('success')
                     ->url(fn (LaporanUtama $record) => "/evidence/{$record->id}/download")
                     ->openUrlInNewTab(),
 
-                // 2. PERUBAHAN KEDUA: Memunculkan tombol Edit bawaan Filament
-                // yang sebelumnya hanya berupa komentar di source code Abang.
                 EditAction::make(), 
-
-                // --- 4. TOMBOL HAPUS ---
-                DeleteAction::make(), // <-- BERSIH!
+                DeleteAction::make(), 
             ])
             ->bulkActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                     BulkAction::make('draftize_final')
-            ->label('Draft Laporan')
-            ->icon('heroicon-o-check-circle')
-            ->color('warning')
-            ->requiresConfirmation() // Memunculkan pop-up konfirmasi
-            ->modalHeading('Draft Laporan Terpilih')
-            ->modalDescription('Apakah Anda yakin ingin draft laporan yang dipilih ini?')
-            ->modalSubmitActionLabel('Ya, Draft Semua')
-            ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
-                // Looping semua data yang dicentang, lalu ubah statusnya
-                $records->each(function ($record) {
-                    $record->update(['status' => 'draft']);
-                });
-            }),
+                        ->label('Draft Laporan')
+                        ->icon('heroicon-o-check-circle')
+                        ->color('warning')
+                        ->requiresConfirmation() 
+                        ->modalHeading('Draft Laporan Terpilih')
+                        ->modalDescription('Apakah Anda yakin ingin draft laporan yang dipilih ini?')
+                        ->modalSubmitActionLabel('Ya, Draft Semua')
+                        ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
+                            $records->each(function ($record) {
+                                $record->update(['status' => 'draft']);
+                            });
+                        }),
                 ]),
             ])
             ->defaultSort('created_at', 'desc');
-    
     }
 
     public static function getRelations(): array
@@ -363,7 +325,8 @@ class LaporanUtamaResource extends Resource
             //
         ];
     }
-    // --- TAMBAHAN BEDAH MIKRO: FILTER DATA BERDASARKAN USER ---
+
+    // --- SATPAM GERBANG UTAMA: FILTER GLOBAL ---
     public static function getEloquentQuery(): Builder
     {
         $user = Auth::user();

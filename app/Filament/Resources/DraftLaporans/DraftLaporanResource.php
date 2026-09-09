@@ -25,6 +25,8 @@ class DraftLaporanResource extends Resource
     protected static ?string $navigationLabel = 'Draft Laporan';
 
     protected static ?string $slug = 'draft-laporan';
+    protected static ?string $modelLabel = 'Draft Laporan TD';
+    protected static ?string $pluralModelLabel = 'Draft Laporan TD';
 
     // Mengatur posisi menu agar berada di bawah Riwayat Laporan (Ubah angkanya jika perlu)
     protected static ?int $navigationSort = 2; 

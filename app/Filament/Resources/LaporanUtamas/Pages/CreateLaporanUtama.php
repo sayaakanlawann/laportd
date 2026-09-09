@@ -10,28 +10,21 @@ class CreateLaporanUtama extends CreateRecord
 {
     protected static string $resource = LaporanUtamaResource::class;
 
-    // 1. Tambahkan Session untuk menyimpan draft memori ketikan
     #[Session]
     public ?array $data = [];
 
-    // 2. Gabungkan logika "Menangkap Shift" dan "Membaca Memori" di dalam fillForm
     protected function fillForm(): void
     {
         $this->callHook('beforeFill');
 
-        // Tangkap parameter shift dari URL
         $shift = request()->query('shift');
 
         if (!empty($this->data)) {
-            // SKENARIO A: User habis refresh (Ada memori tersimpan)
-            // Pastikan shift-nya tetap dipaksa sesuai dengan URL agar tidak meleset
             if ($shift) {
                 $this->data['shift'] = $shift;
             }
             $this->form->fill($this->data);
         } else {
-            // SKENARIO B: Pertama kali buka halaman (Memori kosong)
-            // Isi form dengan shift dari URL saja
             $this->form->fill([
                 'shift' => $shift,
             ]);
@@ -40,14 +33,41 @@ class CreateLaporanUtama extends CreateRecord
         $this->callHook('afterFill');
     }
 
-    // 3. Logika bawaan Abang tetap dipertahankan
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         $data['shift'] = request()->query('shift') ?? ($data['shift'] ?? 'pagi');
+        
+        // 1. Paksa parsing format Y-m-d agar akurat
+        $tanggalRaw = $data['tanggal_tugas'] ?? date('Y-m-d');
+        $tanggal = \Carbon\Carbon::parse($tanggalRaw)->format('Y-m-d');
+        
+        // 2. Pakai absolute path (\App\Models\) dan whereDate
+        $existingReport = \App\Models\LaporanUtama::whereDate('tanggal_tugas', $tanggal)
+            ->where('shift', $data['shift'])
+            ->first();
+
+        if ($existingReport) {
+            if ($existingReport->status === 'final') {
+                \Filament\Notifications\Notification::make()
+                    ->danger()
+                    ->title('Gagal Menyimpan')
+                    ->body('Laporan untuk Tanggal dan Shift ini sudah ada!')
+                    ->send();
+
+                $this->halt(); 
+            } elseif ($existingReport->status === 'alpha') {
+                // HAPUS PERMANEN TANPA AMPUN
+                $existingReport->forceDelete();
+            }
+        }
+
+        // 3. SUNTIK PAKSA DATA 
+        $data['status'] = 'final'; 
+        $data['nama_petugas'] = auth()->user()->name; 
+
         return $data;
     }
 
-    // 4. Wajib ditambahkan: Bersihkan brankas memori ketika Laporan BERHASIL disimpan
     protected function afterCreate(): void
     {
         $this->reset('data');
@@ -56,10 +76,8 @@ class CreateLaporanUtama extends CreateRecord
     protected function getFormActions(): array
     {
         return [
-            $this->getCreateFormAction(), // Menampilkan tombol "Simpan" biasa
-            $this->getCancelFormAction(), // Menampilkan tombol "Batal"
-            // Kita sengaja tidak memanggil $this->getCreateAnotherFormAction() di sini
-            // agar tombol "Create & Create Another" lenyap!
+            $this->getCreateFormAction(),
+            $this->getCancelFormAction(),
         ];
     }
 }
