@@ -11,8 +11,12 @@ use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Actions\Action; // <-- Ini yang benar untuk aksi Tabel
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
+use Filament\Tables\Filters\Filter;
+use Illuminate\Database\Eloquent\Builder;
+use Carbon\Carbon;
 
 class MonitoringShift extends Page implements HasTable
 {
@@ -87,6 +91,26 @@ class MonitoringShift extends Page implements HasTable
                     ->badge()
                     ->color(fn (string $state): string => ($state === 'Kosong' || str_starts_with($state, 'Belum Input:')) ? 'danger' : 'success')
                     ->icon(fn (string $state): string => ($state === 'Kosong' || str_starts_with($state, 'Belum Input:')) ? 'heroicon-m-x-circle' : 'heroicon-m-check-circle'),
+            ])
+            ->filters([
+                Filter::make('filter_bulan')
+                    ->form([
+                        TextInput::make('bulan') // 🔥 Ubah DatePicker menjadi TextInput
+                            ->label('Filter Bulan & Tahun')
+                            ->type('month') // 🔥 Ini kunci ajaibnya!
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query->when(
+                            $data['bulan'],
+                            function (Builder $query, $date) {
+                                // Input type 'month' menghasilkan format "YYYY-MM" (Contoh: "2026-09")
+                                $pecah = explode('-', $date);
+                                return $query
+                                    ->whereYear('tanggal_tugas', $pecah[0])
+                                    ->whereMonth('tanggal_tugas', $pecah[1]);
+                            }
+                        );
+                    })
             ])
 
             // 🔥 TOMBOL TEGURAN MANUAL DI POJOK KANAN ATAS TABEL (Untuk tanggal yang blank total) 🔥
