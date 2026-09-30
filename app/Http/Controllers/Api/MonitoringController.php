@@ -43,6 +43,34 @@ class MonitoringController extends Controller
     }
 
     // Fungsi peracik data agar JSON-nya cantik dan sesuai request Putra
+    // 🔥 FUNGSI BARU: Cari berdasarkan tanggal di-submit (created_at)
+    public function getLaporanByCreatedAt(Request $request)
+    {
+        // 1. Ambil parameter tanggal (default: hari ini)
+        $tanggal = $request->query('tanggal', Carbon::today()->format('Y-m-d'));
+
+        // 2. Tarik semua laporan yang DIBUAT (di-input) pada tanggal tersebut
+        // Menggunakan whereDate('created_at') untuk mencocokkan tanggal dari timestamp
+        $laporan = LaporanUtama::with('siarans')
+            ->whereDate('created_at', $tanggal)
+            ->whereIn('status', ['final', 'alpha'])
+            ->orderBy('created_at', 'desc') // Urutkan dari jam input terbaru
+            ->get();
+
+        // 3. Rombak datanya agar rapi (tetap menggunakan fungsi yang sama agar Putra tidak bingung)
+        $dataRapi = $laporan->map(function ($record) {
+            return $this->formatDataShift($record);
+        });
+
+        // 4. Keluarkan JSON
+        return response()->json([
+            'status' => 'success',
+            'pesan' => "Data laporan yang di-input/dibuat pada tanggal {$tanggal} berhasil diambil",
+            'total_data' => $laporan->count(),
+            'tanggal_pencarian' => $tanggal,
+            'data' => $dataRapi
+        ], 200);
+    }
     private function formatDataShift($record)
     {
         // Jika TD belum input sama sekali
