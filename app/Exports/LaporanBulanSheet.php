@@ -178,17 +178,18 @@ class LaporanBulanSheet implements FromCollection, WithHeadings, WithMapping, Sh
                 $event->sheet->setCellValue("{$kolomTerakhir}{$barisTtd}", "Banjarmasin, {$tanggalHariIni}");
                 
                 $barisTtd++;
-                $event->sheet->setCellValue("{$kolomTerakhir}{$barisTtd}", "Mengetahui, Lilik Susanto");
+                $event->sheet->setCellValue("{$kolomTerakhir}{$barisTtd}", "Mengetahui,");
                 $event->sheet->setCellValue("{$kolomTerakhir}" . ($barisTtd + 1), "KPP Teknik");
                 
                 // Lompat 5 baris untuk ruang tanda tangan basah
                 $barisTtd += 5; 
                 
                 $event->sheet->setCellValue("{$kolomTerakhir}{$barisTtd}", "( ........................................ )");
-                $event->sheet->setCellValue("{$kolomTerakhir}" . ($barisTtd + 1), "NIP. 198003262014091001");
+                $event->sheet->setCellValue("{$kolomTerakhir}" . ($barisTtd + 1), "Lilik Susanto");
+                $event->sheet->setCellValue("{$kolomTerakhir}" . ($barisTtd + 2), "NIP. 198003262014091001");
 
                 // 4. Bikin rata tengah khusus area tanda tangan saja
-                $event->sheet->getStyle("{$kolomTerakhir}" . ($barisTerakhir + 3) . ":{$kolomTerakhir}" . ($barisTtd + 1))->applyFromArray([
+                $event->sheet->getStyle("{$kolomTerakhir}" . ($barisTerakhir + 3) . ":{$kolomTerakhir}" . ($barisTtd + 1)  . ($barisTtd + 2))->applyFromArray([
                     'alignment' => [
                         'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
                     ]
