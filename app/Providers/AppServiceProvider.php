@@ -2,11 +2,14 @@
 
 namespace App\Providers;
 
+use App\Models\User;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Storage;
 use League\Flysystem\Filesystem;
 use Masbug\Flysystem\GoogleDriveAdapter;
 use Illuminate\Support\Facades\URL;
+
 class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -26,6 +29,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Izinkan akses dokumentasi Scramble (/docs/api) di environment production
+        Gate::define('viewApiDocs', function (?User $user) {
+            return true;
+        });
+
         Storage::extend('google', function($app, $config) {
             $client = new \Google\Client();
             
@@ -34,7 +42,7 @@ class AppServiceProvider extends ServiceProvider
             $client->setClientSecret($config['clientSecret']);
             $client->refreshToken($config['refreshToken']);
             
-          $service = new \Google\Service\Drive($client);
+            $service = new \Google\Service\Drive($client);
             
             // KUNCI PERBAIKAN:
             // Kita bersihkan ID dari spasi/enter tersembunyi menggunakan trim()
@@ -49,11 +57,9 @@ class AppServiceProvider extends ServiceProvider
                 $config
             );
         });
-        // if (str_contains(request()->getHost(), 'ngrok')) {
-        //     URL::forceScheme('https');
-        // }
+
         if (config('app.env') === 'production') {
-        URL::forceScheme('https');
+            URL::forceScheme('https');
+        }
     }
-}
 }
