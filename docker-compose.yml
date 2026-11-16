@@ -6,6 +6,9 @@ services:
       context: .
       dockerfile: docker/php/Dockerfile
     container_name: tvri_app
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     restart: unless-stopped
     working_dir: /var/www
     volumes:

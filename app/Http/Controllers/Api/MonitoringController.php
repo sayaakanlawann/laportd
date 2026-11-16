@@ -9,101 +9,162 @@ use Carbon\Carbon;
 
 class MonitoringController extends Controller
 {
-    public function getShiftHariIni(Request $request)
+    /**
+     * Helper: Konversi format DDMMYY ke Y-m-d
+     */
+    private function parseTanggalDmy(?string $input, Carbon $default): ?Carbon
     {
-        // 1. Ambil tanggal dari parameter (default: hari ini)
-        $tanggal = $request->query('tanggal', Carbon::today()->format('Y-m-d'));
-
-        // 2. Tarik data Shift Pagi (Tambahkan with('siarans') agar tabel relasi ikut terbawa)
-        $pagi = LaporanUtama::with('siarans')
-            ->whereDate('tanggal_tugas', $tanggal)
-            ->where('shift', 'pagi')
-            ->whereIn('status', ['final', 'alpha'])
-            ->orderBy('status', 'desc')
-            ->first();
-
-        // 3. Tarik data Shift Sore (Tambahkan with('siarans') juga)
-        $sore = LaporanUtama::with('siarans')
-            ->whereDate('tanggal_tugas', $tanggal)
-            ->where('shift', 'sore')
-            ->whereIn('status', ['final', 'alpha'])
-            ->orderBy('status', 'desc')
-            ->first();
-
-        // 4. Keluarkan JSON
-        return response()->json([
-            'status' => 'success',
-            'pesan' => 'Data detail monitoring shift berhasil diambil',
-            'data' => [
-                'tanggal_request' => $tanggal,
-                'shift_pagi' => $this->formatDataShift($pagi),
-                'shift_sore' => $this->formatDataShift($sore),
-            ]
-        ], 200);
-    }
-
-    // Fungsi peracik data agar JSON-nya cantik dan sesuai request Putra
-    // 🔥 FUNGSI BARU: Cari berdasarkan tanggal di-submit (created_at)
-    public function getLaporanByCreatedAt(Request $request)
-    {
-        // 1. Ambil parameter tanggal (default: hari ini)
-        $tanggal = $request->query('tanggal', Carbon::today()->format('Y-m-d'));
-
-        // 2. Tarik semua laporan yang DIBUAT (di-input) pada tanggal tersebut
-        // Menggunakan whereDate('created_at') untuk mencocokkan tanggal dari timestamp
-        $laporan = LaporanUtama::with('siarans')
-            ->whereDate('created_at', $tanggal)
-            ->whereIn('status', ['final', 'alpha'])
-            ->orderBy('created_at', 'desc') // Urutkan dari jam input terbaru
-            ->get();
-
-        // 3. Rombak datanya agar rapi (tetap menggunakan fungsi yang sama agar Putra tidak bingung)
-        $dataRapi = $laporan->map(function ($record) {
-            return $this->formatDataShift($record);
-        });
-
-        // 4. Keluarkan JSON
-        return response()->json([
-            'status' => 'success',
-            'pesan' => "Data laporan yang di-input/dibuat pada tanggal {$tanggal} berhasil diambil",
-            'total_data' => $laporan->count(),
-            'tanggal_pencarian' => $tanggal,
-            'data' => $dataRapi
-        ], 200);
-    }
-    private function formatDataShift($record)
-    {
-        // Jika TD belum input sama sekali
-        if (!$record) {
-            return null; // Kita kasih null agar Putra tahu memang kosong
+        if (empty($input)) {
+            return $default;
         }
 
-        // Kita format log siarannya agar gampang dibaca Putra
-        $logSiaranRapi = $record->siarans->map(function ($siaran) {
-            
-            // Format jam (jaga-jaga kalau ada data lama yang masih pakai '|')
-            $jamMulai = str_contains($siaran->jam_tayang, '|') ? explode('|', $siaran->jam_tayang)[0] : \Carbon\Carbon::parse($siaran->jam_tayang)->format('H:i');
-            $jamSelesai = $siaran->jam_selesai ? \Carbon\Carbon::parse($siaran->jam_selesai)->format('H:i') : '-';
+        // Pastikan input tepat 6 digit angka (DDMMYY)
+        if (!preg_match('/^\d{6}$/', $input)) {
+            return null;
+        }
 
-            return [
-                'waktu_siaran' => "{$jamMulai} - {$jamSelesai}",
-                'program' => $siaran->nama_program,
-                'jenis_acara' => $siaran->jenis_acara,
-                'status_kendala' => $siaran->status_siaran,
-                'catatan' => $siaran->catatan_kendala ?? '-'
-            ];
-        });
+        try {
+            return Carbon::createFromFormat('dmy', $input)->startOfDay();
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
 
-        // Struktur utama yang akan diterima Putra
+    /**
+     * Ambil Data Laporan Berdasarkan Tanggal Tugas
+     * 
+     * Mengambil daftar shift TD dan log siaran. Jika parameter tanggal dikosongkan, sistem otomatis mengambil data hari ini.
+     * 
+     * @queryParam tanggal string Format DDMMYY (6 digit angka). Contoh: 161126
+     */
+    public function getByTanggalTugas(Request $request)
+    {
+        $tanggalObj = $this->parseTanggalDmy($request->query('tanggal'), Carbon::today());
+
+        if (!$tanggalObj) {
+            return response()->json([
+                'status' => 'error',
+                'pesan' => 'Format tanggal tidak valid. Gunakan format DDMMYY (contoh: 161126).'
+            ], 400);
+        }
+
+        $laporan = LaporanUtama::with('siarans')
+            ->whereDate('tanggal_tugas', $tanggalObj->format('Y-m-d'))
+            ->whereIn('status', ['final', 'alpha'])
+            ->orderBy('shift', 'asc')
+            ->get();
+
+        return response()->json([
+            'status' => 'success',
+            'filter' => 'tanggal_tugas',
+            'tanggal' => $tanggalObj->format('dmy'),
+            'total_data' => $laporan->count(),
+            'data' => $laporan->map(fn($record) => $this->formatDataShift($record))
+        ], 200);
+    }
+
+    /**
+     * Ambil Data Laporan Berdasarkan Rentang Tanggal Tugas
+     * 
+     * Mengambil rekap shift dalam rentang waktu tertentu. Default mengambil 7 hari terakhir hingga hari ini.
+     * 
+     * @queryParam mulai string Tanggal awal format DDMMYY. Contoh: 011126
+     * @queryParam akhir string Tanggal akhir format DDMMYY. Contoh: 161126
+     */
+    public function getByRentangTanggal(Request $request)
+    {
+        $mulaiObj = $this->parseTanggalDmy($request->query('mulai'), Carbon::today()->subDays(7));
+        $akhirObj = $this->parseTanggalDmy($request->query('akhir'), Carbon::today());
+
+        if (!$mulaiObj || !$akhirObj) {
+            return response()->json([
+                'status' => 'error',
+                'pesan' => 'Format tanggal mulai/akhir tidak valid. Gunakan format DDMMYY (contoh: 011126).'
+            ], 400);
+        }
+
+        $laporan = LaporanUtama::with('siarans')
+            ->whereBetween('tanggal_tugas', [$mulaiObj->format('Y-m-d'), $akhirObj->format('Y-m-d')])
+            ->whereIn('status', ['final', 'alpha'])
+            ->orderBy('tanggal_tugas', 'desc')
+            ->orderBy('shift', 'asc')
+            ->get();
+
+        return response()->json([
+            'status' => 'success',
+            'filter' => 'rentang_tanggal',
+            'rentang' => [
+                'mulai' => $mulaiObj->format('dmy'),
+                'akhir' => $akhirObj->format('dmy'),
+            ],
+            'total_data' => $laporan->count(),
+            'data' => $laporan->map(fn($record) => $this->formatDataShift($record))
+        ], 200);
+    }
+
+    /**
+     * Ambil Data Laporan Berdasarkan Waktu Submit
+     * 
+     * Mengambil data laporan berdasarkan kapan laporan diinput ke sistem (created_at).
+     * 
+     * @queryParam tanggal string Format DDMMYY (6 digit angka). Contoh: 161126
+     */
+    public function getByWaktuSubmit(Request $request)
+    {
+        $tanggalObj = $this->parseTanggalDmy($request->query('tanggal'), Carbon::today());
+
+        if (!$tanggalObj) {
+            return response()->json([
+                'status' => 'error',
+                'pesan' => 'Format tanggal tidak valid. Gunakan format DDMMYY (contoh: 161126).'
+            ], 400);
+        }
+
+        $laporan = LaporanUtama::with('siarans')
+            ->whereDate('created_at', $tanggalObj->format('Y-m-d'))
+            ->whereIn('status', ['final', 'alpha'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json([
+            'status' => 'success',
+            'filter' => 'waktu_submit',
+            'tanggal' => $tanggalObj->format('dmy'),
+            'total_data' => $laporan->count(),
+            'data' => $laporan->map(fn($record) => $this->formatDataShift($record))
+        ], 200);
+    }
+
+    /**
+     * Helper: Memformat struktur JSON tiap baris laporan shift & siaran
+     */
+    private function formatDataShift($record): array
+    {
         return [
-            'status_laporan' => $record->status === 'final' ? 'Final' : 'Alpha',
+            'id' => $record->id,
+            'tanggal_tugas' => Carbon::parse($record->tanggal_tugas)->format('Y-m-d'),
             'shift' => ucfirst($record->shift),
-            'dibuat_pada' => $record->created_at ? $record->created_at->format('Y-m-d H:i:s') : '-',
-            'tanggal_tugas' => $record->tanggal_tugas,
-            'nama_td' => $record->nama_petugas,
-            'kru_lengkap' => $record->kru_lengkap ? 'Ya' : 'Tidak',
-            'kendala_pra_siaran' => $record->pra_kendala ? 'Ada Kendala' : 'Aman',
-            'semua_log_siaran' => $logSiaranRapi
+            'status' => $record->status,
+            'petugas' => [
+                'td' => $record->nama_petugas,
+                'pdu' => $record->pdu_nama,
+                'asisten_pdu' => $record->asisten_pdu,
+                'tx' => $record->tx_petugas_nama,
+            ],
+            'kesimpulan' => $record->kesimpulan,
+            'waktu_submit' => Carbon::parse($record->created_at)
+                ->timezone('Asia/Makassar')
+                ->format('Y-m-d H:i:s') . ' WITA',
+            'daftar_siaran' => $record->siarans->map(function ($siaran) {
+                return [
+                    'jam_tayang' => Carbon::parse($siaran->jam_tayang)->format('H:i'),
+                    'jam_selesai' => Carbon::parse($siaran->jam_selesai)->format('H:i'),
+                    'nama_program' => $siaran->nama_program,
+                    'jenis_acara' => $siaran->jenis_acara,
+                    'status_siaran' => $siaran->status_siaran,
+                    'catatan_kendala' => $siaran->catatan_kendala,
+                ];
+            }),
         ];
     }
 }

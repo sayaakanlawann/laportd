@@ -8,10 +8,13 @@ Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
-// 👇 TAMBAHKAN JALUR PELAYAN UNTUK PUTRA DI SINI 👇
-// URL yang sudah ada (berdasarkan tanggal_tugas)
-Route::get('/monitoring-hari-ini', [MonitoringController::class, 'getShiftHariIni']);
-Route::get('/monitoring-custom', [MonitoringController::class, 'getLaporanCustom']);
+Route::prefix('monitoring')->group(function () {
+    // 1. Berdasarkan tanggal tugas (default: hari ini, opsional: ?tanggal=DDMMYY)
+    Route::get('/tugas', [MonitoringController::class, 'getByTanggalTugas']);
 
-// 🔥 URL BARU: Berdasarkan waktu input (created_at)
-Route::get('/monitoring-dibuat-pada', [MonitoringController::class, 'getLaporanByCreatedAt']);
+    // 2. Berdasarkan rentang tanggal tugas (?mulai=DDMMYY&akhir=DDMMYY)
+    Route::get('/rentang', [MonitoringController::class, 'getByRentangTanggal']);
+
+    // 3. Berdasarkan waktu input / submit (default: hari ini, opsional: ?tanggal=DDMMYY)
+    Route::get('/submit', [MonitoringController::class, 'getByWaktuSubmit']);
+});
